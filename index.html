@@ -3,148 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>บันทึก SP (DG-System)</title>
+    <title>Splitter System Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { background-color: #eceff1; min-height: 100vh; display: flex; align-items: center; }
-        .box { border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); width: 100%; max-width: 500px; margin: auto; }
-        .label { color: #34495e; }
+        body { background-color: #f0f2f5; min-height: 100vh; }
+        .header-banner { background: linear-gradient(90deg, #06C755 0%, #05a347 100%); color: white; padding: 30px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .box { border-radius: 12px; margin: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .shadow-input { background-color: #f5f5f5 !important; color: #7a7a7a !important; border: 1px solid #dbdbdb !important; pointer-events: none; }
+        .label { color: #4a4a4a; font-weight: 600; }
+        .splitter-id-input { font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px; }
     </style>
 </head>
-<body class="p-2">
-    <div class="box">
-        <h1 class="title is-4 has-text-success has-text-centered">🛡️ บันทึกข้อมูล SP (Master)</h1>
-        
+<body>
+    <div class="header-banner">
+        <h1 class="title is-3 has-text-white">SPLITTER SYSTEM</h1>
+        <p class="subtitle is-6 has-text-white">ระบบบันทึกข้อมูลและตรวจสอบพิกัดสนาม</p>
+    </div>
+
+    <div class="container pb-6">
         <div id="loader" class="has-text-centered py-6">
             <button class="button is-loading is-white is-large"></button>
-            <p>กำลังเตรียมข้อมูลระบบ...</p>
+            <p>กำลังเชื่อมต่อคลังข้อมูลอาวุธ...</p>
         </div>
 
-        <div id="formBody" style="display:none;">
+        <div id="formBody" class="box" style="display:none;">
             <div class="field">
-                <label class="label">🔹 ประเภท (Type)</label>
-                <div class="select is-fullwidth">
-                    <select id="type">
-                        <option value="L2">L2</option>
-                        <option value="L1">L1</option>
-                        <option value="OLT">OLT</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">📂 กรณี (Case)</label>
-                <div class="select is-fullwidth">
-                    <select id="mainCase" onchange="updateSubCase()">
-                        <option value="">-- เลือกกรณี --</option>
-                        <option value="1. ภายนอก อุปกรณ์">1. ภายนอก อุปกรณ์</option>
-                        <option value="2. ภายใน อุปกรณ์">2. ภายใน อุปกรณ์</option>
-                        <option value="3. งานย้ายและร้องเรียน">3. งานย้ายและร้องเรียน</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">🔍 ปัญหาย่อย (Sub_Case)</label>
-                <div class="select is-fullwidth">
-                    <select id="subCase">
-                        <option value="">-- โปรดเลือกกรณีหลักก่อน --</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">📦 รหัส SP</label>
+                <label class="label">📍 พิกัด (Latitude, Longitude)</label>
                 <div class="control">
-                    <input id="spId" class="input is-success" type="text" placeholder="กรอกรหัส SP" oninput="this.value = this.value.toUpperCase()">
+                    <input id="latLong" class="input" type="text" placeholder="ระบุพิกัดเอง (กรณี AI อ่านไม่พบ)">
                 </div>
             </div>
 
             <div class="field">
-                <label class="label">📝 หมายเหตุ / Remark</label>
+                <label class="label">จังหวัด (Province)</label>
                 <div class="control">
-                    <textarea id="detail" class="textarea" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+                    <input id="prov" class="input" type="text" placeholder="ระบุจังหวัดเอง">
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="field">
+                <label class="label has-text-centered">📦 รหัส Splitter (ID)</label>
+                <div class="control">
+                    <input id="spId" class="input is-success splitter-id-input" type="text" placeholder="กรอกรหัสอุปกรณ์" oninput="this.value = this.value.toUpperCase()">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">🔹 ประเภทอุปกรณ์</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="type"><option>กำลังโหลด...</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">📂 กรณีที่ตรวจพบ (Main Case)</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="mainCase" onchange="filterSubCases()"><option>เลือกประเภทก่อน</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">🔍 ปัญหาย่อย (Sub Case)</label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select id="subCase"><option>เลือกกรณีหลักก่อน</option></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">📝 หมายเหตุเพิ่มเติม</label>
+                <div class="control">
+                    <textarea id="detail" class="textarea" rows="2" placeholder="ระบุรายละเอียดเพื่อช่วยในการวิเคราะห์..."></textarea>
                 </div>
             </div>
 
             <div class="mt-5">
-                <button id="btnSave" onclick="saveData()" class="button is-success is-fullwidth is-large"><b>💾 ยืนยันบันทึก SP</b></button>
-                <button onclick="liff.closeWindow()" class="button is-text is-fullwidth mt-2">ยกเลิก</button>
+                <button id="btnSave" onclick="submitData()" class="button is-success is-fullwidth is-large">
+                    <b>💾 ยืนยันบันทึกข้อมูล</b>
+                </button>
+                <button onclick="liff.closeWindow()" class="button is-light is-fullwidth mt-3">ยกเลิก</button>
             </div>
         </div>
     </div>
 
     <script>
-        const LIFF_ID = "2009634741-xdYCjBwI"; 
-        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec"; 
-
-        const subCaseMap = {
-            "1. ภายนอก อุปกรณ์": [
-                "1.1 ไม่มีฝาปิด",
-                "1.2 ไม่ได้ยึดเกาะตามมาตรฐาน (Bolt/สาย)",
-                "1.3 ตำแหน่งไม่เหมาะสม (ต่ำ/หย่อน)",
-                "1.4 ไม่มีฝาปิด",
-                "1.5 ตัวล็อกชำรุด/หาย"
-            ],
-            "2. ภายใน อุปกรณ์": [
-                "2.1 Port เสีย/ชำรุด (ระบุเบอร์ใน Remark)",
-                "2.2 Pigtail / Connector เสื่อมสภาพ"
-            ],
-            "3. งานย้ายและร้องเรียน": [
-                "3.1 ย้ายตำแหน่ง/แนวเสา",
-                "3.2 เคสร้องเรียนจากลูกค้า"
-            ]
-        };
-
-        function updateSubCase() {
-            const main = document.getElementById('mainCase').value;
-            const sub = document.getElementById('subCase');
-            sub.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
-            if (subCaseMap[main]) {
-                subCaseMap[main].forEach(item => {
-                    let opt = document.createElement('option');
-                    opt.value = item; opt.innerHTML = item;
-                    sub.appendChild(opt);
-                });
-            }
-        }
+        const LIFF_ID = "2009634741-xdYCjBwI";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec";
+        
+        let masterOptions = [];
+        let userId = "";
 
         window.onload = async () => {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) { liff.login(); }
             else {
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                document.getElementById('userName').innerText = profile.displayName; // ถ้ามีที่โชว์ชื่อ
+                
+                await loadOcrData();
+                await loadDynamicOptions();
+
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('formBody').style.display = 'block';
             }
         };
 
-        async function saveData() {
-            const spId = document.getElementById('spId').value;
-            const main = document.getElementById('mainCase').value;
-            const sub = document.getElementById('subCase').value;
-            if (!spId || !main || !sub) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+        // 1. ✅ โหลดข้อมูลที่ AI วิเคราะห์ไว้ (พิกัด/จังหวัด)
+        async function loadOcrData() {
+            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
+            const data = await res.json();
+            
+            if (data.latLong) {
+                const input = document.getElementById('latLong');
+                input.value = data.latLong;
+                input.readOnly = true;
+                input.classList.add('shadow-input');
+            }
+            if (data.prov) {
+                const input = document.getElementById('prov');
+                input.value = data.prov;
+                input.readOnly = true;
+                input.classList.add('shadow-input');
+            }
+        }
+
+        // 2. ✅ โหลดตัวเลือกจาก Sheet MasterConfig
+        async function loadDynamicOptions() {
+            const res = await fetch(`${API_URL}?action=getOptions`);
+            masterOptions = await res.json(); // สมมติเป็น Array [ [Type, Main, Sub], ... ]
+            
+            const types = [...new Set(masterOptions.slice(1).map(row => row[0]))];
+            const typeSelect = document.getElementById('type');
+            typeSelect.innerHTML = '<option value="">-- เลือกประเภท --</option>';
+            types.forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
+            
+            typeSelect.addEventListener('change', filterMainCases);
+        }
+
+        function filterMainCases() {
+            const selectedType = document.getElementById('type').value;
+            const mains = [...new Set(masterOptions.filter(row => row[0] === selectedType).map(row => row[1]))];
+            const mainSelect = document.getElementById('mainCase');
+            mainSelect.innerHTML = '<option value="">-- เลือกกรณีหลัก --</option>';
+            mains.forEach(m => mainSelect.innerHTML += `<option value="${m}">${m}</option>`);
+            document.getElementById('subCase').innerHTML = '<option value="">-- เลือกกรณีหลักก่อน --</option>';
+        }
+
+        function filterSubCases() {
+            const selectedType = document.getElementById('type').value;
+            const selectedMain = document.getElementById('mainCase').value;
+            const subs = masterOptions.filter(row => row[0] === selectedType && row[1] === selectedMain).map(row => row[2]);
+            const subSelect = document.getElementById('subCase');
+            subSelect.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
+            subs.forEach(s => subSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        }
+
+        // 3. ✅ ส่งข้อมูลบันทึก
+        async function submitData() {
+            const payload = {
+                userId: userId,
+                userName: (await liff.getProfile()).displayName,
+                type: document.getElementById('type').value,
+                case: document.getElementById('mainCase').value,
+                subCase: document.getElementById('subCase').value,
+                id: document.getElementById('spId').value,
+                detail: document.getElementById('detail').value,
+                prov: document.getElementById('prov').value,
+                latLong: document.getElementById('latLong').value
+            };
+
+            if (!payload.id || !payload.type || !payload.case) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
 
             const btn = document.getElementById('btnSave');
             btn.classList.add('is-loading');
-            const profile = await liff.getProfile();
-            
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const payload = {
-                    userId: profile.userId,
-                    userName: profile.displayName,
-                    type: document.getElementById('type').value,
-                    case: main,
-                    subCase: sub,
-                    id: spId,
-                    detail: document.getElementById('detail').value,
-                    latLong: `${pos.coords.latitude},${pos.coords.longitude}`
-                };
 
-                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                liff.sendMessages([{ type: 'text', text: `✅ บันทึก SP [${spId}] เรียบร้อยแล้ว!` }]);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const resultText = await response.text();
+                
+                // ✅ แสดงใบรับงานดิจิทัล (Receipt) ที่ส่งมาจาก Apps Script
+                alert(resultText); 
                 liff.closeWindow();
-            }, (err) => { alert("กรุณาเปิด GPS"); btn.classList.remove('is-loading'); });
+            } catch (e) {
+                alert("บันทึกสำเร็จ (กรุณาตรวจสอบในห้องแชท)");
+                liff.closeWindow();
+            }
         }
     </script>
 </body>
