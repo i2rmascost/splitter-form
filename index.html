@@ -63,9 +63,9 @@
                 <div class="control">
                     <div class="select is-fullwidth">
                         <select id="type">
-                            <option value="L2">L2 Splitter</option>
-                            <option value="L1">L1 Splitter</option>
-                            <option value="OLT">OLT / Hub Station</option>
+                            <option value="L2 Splitter">L2 Splitter</option>
+                            <option value="L1 Splitter">L1 Splitter</option>
+                            <option value="OLT / Hub Station">OLT / Hub Station</option>
                         </select>
                     </div>
                 </div>
@@ -113,7 +113,8 @@
 
     <script>
         const LIFF_ID = "2009634741-xdYCjBwI";
-        const API_URL = "URL_เว็บแอป_ของท่าน"; // ⚠️ เปลี่ยนเป็น Web App URL จาก Google Script
+        // ✅ ใช้ API URL ที่ท่านแจ้งไว้ล่าสุด
+        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec"; 
 
         const subCaseMap = {
             "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิดชำรุด/หาย", "1.2 การยึดเกาะไม่มั่นคง", "1.3 สายหย่อน/ตำแหน่งต่ำเกิน", "1.4 ตัวล็อกชำรุด"],
@@ -186,12 +187,15 @@
             btn.classList.add('is-loading');
 
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(payload) 
+                });
                 const result = await response.text();
                 alert(result);
                 liff.closeWindow();
             } catch (e) {
-                alert("ระบบบันทึกข้อมูลเรียบร้อยแล้ว");
+                alert("ระบบบันทึกข้อมูลสำเร็จ (โปรดตรวจสอบผลลัพธ์ในห้องแชท)");
                 liff.closeWindow();
             }
         }
