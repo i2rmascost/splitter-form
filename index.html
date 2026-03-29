@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>บันทึก SP (DG-System)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { background-color: #eceff1; min-height: 100vh; display: flex; align-items: center; }
+        .box { border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); width: 100%; max-width: 500px; margin: auto; }
+        .label { color: #34495e; }
+    </style>
 </head>
-<body class="p-4" style="background-color: #f5f7fa;">
-    <div class="box mx-auto" style="max-width: 500px; border-radius: 15px;">
-        <h1 class="title is-4 has-text-success has-text-centered">🛡️ บันทึกข้อมูล SP</h1>
+<body class="p-2">
+    <div class="box">
+        <h1 class="title is-4 has-text-success has-text-centered">🛡️ บันทึกข้อมูล SP (Master)</h1>
         
         <div id="loader" class="has-text-centered py-6">
             <button class="button is-loading is-white is-large"></button>
-            <p>กำลังเตรียมข้อมูล...</p>
+            <p>กำลังเตรียมข้อมูลระบบ...</p>
         </div>
 
         <div id="formBody" style="display:none;">
@@ -51,16 +56,22 @@
 
             <div class="field">
                 <label class="label">📦 รหัส SP</label>
-                <input id="spId" class="input is-success" type="text" placeholder="เช่น NKS01X0002" oninput="this.value = this.value.toUpperCase()">
+                <div class="control">
+                    <input id="spId" class="input is-success" type="text" placeholder="กรอกรหัส SP" oninput="this.value = this.value.toUpperCase()">
+                </div>
             </div>
 
             <div class="field">
-                <label class="label">📝 หมายเหตุ</label>
-                <textarea id="detail" class="textarea" placeholder="ระบุเพิ่มเติม..."></textarea>
+                <label class="label">📝 หมายเหตุ / Remark</label>
+                <div class="control">
+                    <textarea id="detail" class="textarea" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+                </div>
             </div>
 
-            <button id="btnSave" onclick="saveData()" class="button is-success is-fullwidth is-large mt-4">💾 ยืนยันบันทึกข้อมูล</button>
-            <button onclick="liff.closeWindow()" class="button is-text is-fullwidth mt-2">❌ ยกเลิก</button>
+            <div class="mt-5">
+                <button id="btnSave" onclick="saveData()" class="button is-success is-fullwidth is-large"><b>💾 ยืนยันบันทึก SP</b></button>
+                <button onclick="liff.closeWindow()" class="button is-text is-fullwidth mt-2">ยกเลิก</button>
+            </div>
         </div>
     </div>
 
@@ -68,7 +79,6 @@
         const LIFF_ID = "2009634741-xdYCjBwI"; 
         const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec"; 
 
-        // ข้อมูล Mapping สำหรับ Sub_Case
         const subCaseMap = {
             "1. ภายนอก อุปกรณ์": [
                 "1.1 ไม่มีฝาปิด",
@@ -88,16 +98,14 @@
         };
 
         function updateSubCase() {
-            const mainCase = document.getElementById('mainCase').value;
-            const subCaseSelect = document.getElementById('subCase');
-            subCaseSelect.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
-            
-            if (subCaseMap[mainCase]) {
-                subCaseMap[mainCase].forEach(item => {
+            const main = document.getElementById('mainCase').value;
+            const sub = document.getElementById('subCase');
+            sub.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
+            if (subCaseMap[main]) {
+                subCaseMap[main].forEach(item => {
                     let opt = document.createElement('option');
-                    opt.value = item;
-                    opt.innerHTML = item;
-                    subCaseSelect.appendChild(opt);
+                    opt.value = item; opt.innerHTML = item;
+                    sub.appendChild(opt);
                 });
             }
         }
@@ -113,9 +121,9 @@
 
         async function saveData() {
             const spId = document.getElementById('spId').value;
-            const mainCase = document.getElementById('mainCase').value;
-            const subCase = document.getElementById('subCase').value;
-            if (!spId || !mainCase || !subCase) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+            const main = document.getElementById('mainCase').value;
+            const sub = document.getElementById('subCase').value;
+            if (!spId || !main || !sub) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
 
             const btn = document.getElementById('btnSave');
             btn.classList.add('is-loading');
@@ -126,15 +134,15 @@
                     userId: profile.userId,
                     userName: profile.displayName,
                     type: document.getElementById('type').value,
-                    case: mainCase,
-                    subCase: subCase,
+                    case: main,
+                    subCase: sub,
                     id: spId,
                     detail: document.getElementById('detail').value,
                     latLong: `${pos.coords.latitude},${pos.coords.longitude}`
                 };
 
                 await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                liff.sendMessages([{ type: 'text', text: `✅ บันทึก SP [${spId}] เรียบร้อย!` }]);
+                liff.sendMessages([{ type: 'text', text: `✅ บันทึก SP [${spId}] เรียบร้อยแล้ว!` }]);
                 liff.closeWindow();
             }, (err) => { alert("กรุณาเปิด GPS"); btn.classList.remove('is-loading'); });
         }
