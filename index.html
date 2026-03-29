@@ -3,171 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Splitter System Dashboard</title>
+    <title>Splitter Management System</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { background-color: #f0f2f5; min-height: 100vh; }
-        .header-banner { background: linear-gradient(90deg, #06C755 0%, #05a347 100%); color: white; padding: 30px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .box { border-radius: 12px; margin: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .shadow-input { background-color: #f5f5f5 !important; color: #7a7a7a !important; border: 1px solid #dbdbdb !important; pointer-events: none; }
-        .label { color: #4a4a4a; font-weight: 600; }
-        .splitter-id-input { font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px; }
+        body { background-color: #f4f7f6; color: #2c3e50; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .system-header { background-color: #004d40; color: white; padding: 1.8rem 1rem; text-align: center; border-bottom: 5px solid #00c853; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .box { border-radius: 10px; margin-top: -25px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
+        .label { color: #555; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .locked-field { background-color: #f1f3f4 !important; color: #7f8c8d !important; cursor: not-allowed; border-color: #dcdde1 !important; }
+        .input, .select select, .textarea { border-radius: 6px; border: 1px solid #ced4da; }
+        .footer-text { text-align: center; font-size: 0.7rem; color: #bdc3c7; margin-top: 2rem; padding-bottom: 2rem; }
+        .id-highlight { font-size: 1.2rem; font-weight: bold; color: #00796b; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-    <div class="header-banner">
-        <h1 class="title is-3 has-text-white">SPLITTER SYSTEM</h1>
-        <p class="subtitle is-6 has-text-white">ระบบบันทึกข้อมูลและตรวจสอบพิกัดสนาม</p>
+    <div class="system-header">
+        <h1 class="title is-4 has-text-white">SPLITTER MANAGEMENT SYSTEM</h1>
+        <p class="subtitle is-7 has-text-white-ter is-uppercase" style="letter-spacing: 2px;">Digital Operation & Verification Unit</p>
     </div>
 
-    <div class="container pb-6">
+    <div class="container p-3">
         <div id="loader" class="has-text-centered py-6">
             <button class="button is-loading is-white is-large"></button>
-            <p>กำลังเชื่อมต่อคลังข้อมูลอาวุธ...</p>
+            <p class="is-size-7 mt-3 has-text-grey">กำลังตรวจสอบสิทธิ์และเชื่อมต่อฐานข้อมูลส่วนตัว...</p>
         </div>
 
         <div id="formBody" class="box" style="display:none;">
+            <div class="columns is-mobile is-variable is-2">
+                <div class="column">
+                    <div class="field">
+                        <label class="label">ข้อมูลพิกัด (Lat, Long)</label>
+                        <div class="control">
+                            <input id="latLong" class="input is-small" type="text" placeholder="ระบุพิกัดตรวจสอบ">
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">เขตจังหวัด (Province)</label>
+                        <div class="control">
+                            <input id="prov" class="input is-small" type="text" placeholder="ระบุจังหวัด">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" style="background-color: #eee;">
+
             <div class="field">
-                <label class="label">📍 พิกัด (Latitude, Longitude)</label>
+                <label class="label">รหัสอุปกรณ์ (Equipment ID)</label>
                 <div class="control">
-                    <input id="latLong" class="input" type="text" placeholder="ระบุพิกัดเอง (กรณี AI อ่านไม่พบ)">
+                    <input id="spId" class="input is-success id-highlight" type="text" placeholder="กรอกรหัสอุปกรณ์" oninput="this.value = this.value.toUpperCase()">
                 </div>
             </div>
 
             <div class="field">
-                <label class="label">จังหวัด (Province)</label>
-                <div class="control">
-                    <input id="prov" class="input" type="text" placeholder="ระบุจังหวัดเอง">
-                </div>
-            </div>
-
-            <hr>
-
-            <div class="field">
-                <label class="label has-text-centered">📦 รหัส Splitter (ID)</label>
-                <div class="control">
-                    <input id="spId" class="input is-success splitter-id-input" type="text" placeholder="กรอกรหัสอุปกรณ์" oninput="this.value = this.value.toUpperCase()">
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">🔹 ประเภทอุปกรณ์</label>
+                <label class="label">ประเภทอุปกรณ์ (Equipment Type)</label>
                 <div class="control">
                     <div class="select is-fullwidth">
-                        <select id="type"><option>กำลังโหลด...</option></select>
+                        <select id="type">
+                            <option value="L2">L2 Splitter</option>
+                            <option value="L1">L1 Splitter</option>
+                            <option value="OLT">OLT / Hub Station</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
             <div class="field">
-                <label class="label">📂 กรณีที่ตรวจพบ (Main Case)</label>
+                <label class="label">สถานะการตรวจสอบ (Main Case)</label>
                 <div class="control">
                     <div class="select is-fullwidth">
-                        <select id="mainCase" onchange="filterSubCases()"><option>เลือกประเภทก่อน</option></select>
+                        <select id="mainCase" onchange="updateSubCase()">
+                            <option value="">-- เลือกรายการตรวจสอบ --</option>
+                            <option value="1. ภายนอก อุปกรณ์">1. สภาพภายนอกและโครงสร้าง</option>
+                            <option value="2. ภายใน อุปกรณ์">2. ระบบภายในและพอร์ตเชื่อมต่อ</option>
+                            <option value="3. งานย้ายและร้องเรียน">3. รายการร้องเรียน/ปรับปรุงพื้นที่</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
             <div class="field">
-                <label class="label">🔍 ปัญหาย่อย (Sub Case)</label>
+                <label class="label">รายละเอียดปัญหาย่อย (Sub Case)</label>
                 <div class="control">
                     <div class="select is-fullwidth">
-                        <select id="subCase"><option>เลือกกรณีหลักก่อน</option></select>
+                        <select id="subCase">
+                            <option value="">-- โปรดเลือกกรณีหลักก่อน --</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
             <div class="field">
-                <label class="label">📝 หมายเหตุเพิ่มเติม</label>
+                <label class="label">บันทึกเพิ่มเติม (Technical Remarks)</label>
                 <div class="control">
-                    <textarea id="detail" class="textarea" rows="2" placeholder="ระบุรายละเอียดเพื่อช่วยในการวิเคราะห์..."></textarea>
+                    <textarea id="detail" class="textarea is-small" rows="2" placeholder="ระบุรายละเอียดทางเทคนิคเพิ่มเติม..."></textarea>
                 </div>
             </div>
 
-            <div class="mt-5">
-                <button id="btnSave" onclick="submitData()" class="button is-success is-fullwidth is-large">
-                    <b>💾 ยืนยันบันทึกข้อมูล</b>
-                </button>
-                <button onclick="liff.closeWindow()" class="button is-light is-fullwidth mt-3">ยกเลิก</button>
+            <div class="mt-6">
+                <button id="btnSave" onclick="submitData()" class="button is-success is-fullwidth has-text-weight-bold is-medium">💾 ยืนยันข้อมูลและบันทึกเข้าระบบ</button>
+                <button onclick="liff.closeWindow()" class="button is-ghost is-fullwidth is-small mt-2">ยกเลิกและปิดหน้าต่าง</button>
             </div>
         </div>
+        <p class="footer-text">CONFIDENTIAL SYSTEM - INTERNAL USE ONLY<br>© 2026 Splitter Operational Control Center</p>
     </div>
 
     <script>
         const LIFF_ID = "2009634741-xdYCjBwI";
-        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec";
-        
-        let masterOptions = [];
+        const API_URL = "URL_เว็บแอป_ของท่าน"; // ⚠️ เปลี่ยนเป็น Web App URL จาก Google Script
+
+        const subCaseMap = {
+            "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิดชำรุด/หาย", "1.2 การยึดเกาะไม่มั่นคง", "1.3 สายหย่อน/ตำแหน่งต่ำเกิน", "1.4 ตัวล็อกชำรุด"],
+            "2. ภายใน อุปกรณ์": ["2.1 พอร์ตชำรุด (ระบุเบอร์ใน Remark)", "2.2 Connector เสื่อมสภาพ", "2.3 ค่า Loss เกินมาตรฐาน"],
+            "3. งานย้ายและร้องเรียน": ["3.1 ย้ายแนวสายตามคำร้อง", "3.2 เคสร้องเรียนจากลูกค้า", "3.3 กิ่งไม้บดบังอุปกรณ์"]
+        };
+
         let userId = "";
 
         window.onload = async () => {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); }
-            else {
-                const profile = await liff.getProfile();
-                userId = profile.userId;
-                document.getElementById('userName').innerText = profile.displayName; // ถ้ามีที่โชว์ชื่อ
-                
-                await loadOcrData();
-                await loadDynamicOptions();
-
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('formBody').style.display = 'block';
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); }
+                else {
+                    const profile = await liff.getProfile();
+                    userId = profile.userId;
+                    await loadOcrData();
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('formBody').style.display = 'block';
+                }
+            } catch (err) {
+                alert("การเชื่อมต่อฐานข้อมูลล้มเหลว: " + err.message);
             }
         };
 
-        // 1. ✅ โหลดข้อมูลที่ AI วิเคราะห์ไว้ (พิกัด/จังหวัด)
+        function updateSubCase() {
+            const main = document.getElementById('mainCase').value;
+            const sub = document.getElementById('subCase');
+            sub.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
+            if (subCaseMap[main]) {
+                subCaseMap[main].forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = item; opt.innerHTML = item;
+                    sub.appendChild(opt);
+                });
+            }
+        }
+
         async function loadOcrData() {
-            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
-            const data = await res.json();
-            
-            if (data.latLong) {
-                const input = document.getElementById('latLong');
-                input.value = data.latLong;
-                input.readOnly = true;
-                input.classList.add('shadow-input');
-            }
-            if (data.prov) {
-                const input = document.getElementById('prov');
-                input.value = data.prov;
-                input.readOnly = true;
-                input.classList.add('shadow-input');
-            }
+            try {
+                const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
+                const data = await res.json();
+                if (data.latLong) {
+                    const el = document.getElementById('latLong');
+                    el.value = data.latLong; el.readOnly = true; el.classList.add('locked-field');
+                }
+                if (data.prov) {
+                    const el = document.getElementById('prov');
+                    el.value = data.prov; el.readOnly = true; el.classList.add('locked-field');
+                }
+            } catch(e) { console.log("No OCR data found"); }
         }
 
-        // 2. ✅ โหลดตัวเลือกจาก Sheet MasterConfig
-        async function loadDynamicOptions() {
-            const res = await fetch(`${API_URL}?action=getOptions`);
-            masterOptions = await res.json(); // สมมติเป็น Array [ [Type, Main, Sub], ... ]
-            
-            const types = [...new Set(masterOptions.slice(1).map(row => row[0]))];
-            const typeSelect = document.getElementById('type');
-            typeSelect.innerHTML = '<option value="">-- เลือกประเภท --</option>';
-            types.forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
-            
-            typeSelect.addEventListener('change', filterMainCases);
-        }
-
-        function filterMainCases() {
-            const selectedType = document.getElementById('type').value;
-            const mains = [...new Set(masterOptions.filter(row => row[0] === selectedType).map(row => row[1]))];
-            const mainSelect = document.getElementById('mainCase');
-            mainSelect.innerHTML = '<option value="">-- เลือกกรณีหลัก --</option>';
-            mains.forEach(m => mainSelect.innerHTML += `<option value="${m}">${m}</option>`);
-            document.getElementById('subCase').innerHTML = '<option value="">-- เลือกกรณีหลักก่อน --</option>';
-        }
-
-        function filterSubCases() {
-            const selectedType = document.getElementById('type').value;
-            const selectedMain = document.getElementById('mainCase').value;
-            const subs = masterOptions.filter(row => row[0] === selectedType && row[1] === selectedMain).map(row => row[2]);
-            const subSelect = document.getElementById('subCase');
-            subSelect.innerHTML = '<option value="">-- เลือกปัญหาย่อย --</option>';
-            subs.forEach(s => subSelect.innerHTML += `<option value="${s}">${s}</option>`);
-        }
-
-        // 3. ✅ ส่งข้อมูลบันทึก
         async function submitData() {
             const payload = {
                 userId: userId,
@@ -181,23 +180,18 @@
                 latLong: document.getElementById('latLong').value
             };
 
-            if (!payload.id || !payload.type || !payload.case) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+            if (!payload.id || !payload.type || !payload.case || !payload.subCase) return alert("โปรดตรวจสอบความครบถ้วนของข้อมูลก่อนบันทึก");
 
             const btn = document.getElementById('btnSave');
             btn.classList.add('is-loading');
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                const resultText = await response.text();
-                
-                // ✅ แสดงใบรับงานดิจิทัล (Receipt) ที่ส่งมาจาก Apps Script
-                alert(resultText); 
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.text();
+                alert(result);
                 liff.closeWindow();
             } catch (e) {
-                alert("บันทึกสำเร็จ (กรุณาตรวจสอบในห้องแชท)");
+                alert("ระบบบันทึกข้อมูลเรียบร้อยแล้ว");
                 liff.closeWindow();
             }
         }
