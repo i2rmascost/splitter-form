@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>บันทึกตู้ Splitter</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        body { background:#f5f7fa; padding:20px; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+        .box { width:100%; max-width:400px; border-radius:15px; box-shadow:0 8px 20px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1 class="title is-4 has-text-centered has-text-success">บันทึกตู้ Splitter</h1>
+        <div id="loader" class="has-text-centered py-5">⌛ กำลังโหลดระบบ...</div>
+        
+        <div id="formBody" style="display:none;">
+            <input id="p" class="input mb-3" type="text" placeholder="ระบุจังหวัด">
+            <input id="s" class="input mb-3" type="text" placeholder="รหัสตู้">
+            <textarea id="d" class="textarea mb-3" placeholder="รายละเอียด/สภาพตู้"></textarea>
+            <button id="btn" onclick="save()" class="button is-success is-fullwidth is-large">💾 บันทึกข้อมูล</button>
+        </div>
+    </div>
+
+    <script>
+        const LIFF_ID = "2009634741-xdYCjBwI";
+        // 🚨 URL GAS ล่าสุดที่ท่านส่งมาให้ข้า (ใช้ตัวเดิมเป็น Backend)
+        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec";
+
+        window.onload = async () => {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); }
+                else {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('formBody').style.display = 'block';
+                }
+            } catch (e) { alert("LIFF Init Error"); }
+        };
+
+        async function save() {
+            const btn = document.getElementById('btn');
+            btn.classList.add('is-loading');
+            
+            const profile = await liff.getProfile();
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const payload = {
+                    userId: profile.userId,
+                    prov: document.getElementById('p').value,
+                    id: document.getElementById('s').value,
+                    detail: document.getElementById('d').value,
+                    latLong: pos.coords.latitude + "," + pos.coords.longitude
+                };
+
+                try {
+                    // ส่งข้อมูลไปที่ GAS (Backend)
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // สำคัญมากสำหรับการส่งจาก GitHub ไป GAS
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    await liff.sendMessages([{ type: 'text', text: '✅ บันทึกตู้ [' + payload.id + '] สำเร็จ!' }]);
+                    liff.closeWindow();
+                } catch (err) {
+                    alert("ส่งข้อมูลล้มเหลว: " + err.message);
+                    btn.classList.remove('is-loading');
+                }
+            }, () => { alert("กรุณาเปิด GPS"); btn.classList.remove('is-loading'); });
+        }
+    </script>
+</body>
+</html>
