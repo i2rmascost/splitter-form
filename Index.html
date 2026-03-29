@@ -14,61 +14,91 @@
 <body>
     <div class="box">
         <h1 class="title is-4 has-text-centered has-text-success">บันทึกตู้ Splitter</h1>
-        <div id="loader" class="has-text-centered py-5">⌛ กำลังโหลดระบบ...</div>
+        <div id="loader" class="has-text-centered py-5">⌛ กำลังเตรียมระบบ...</div>
         
         <div id="formBody" style="display:none;">
-            <input id="p" class="input mb-3" type="text" placeholder="ระบุจังหวัด">
-            <input id="s" class="input mb-3" type="text" placeholder="รหัสตู้">
-            <textarea id="d" class="textarea mb-3" placeholder="รายละเอียด/สภาพตู้"></textarea>
-            <button id="btn" onclick="save()" class="button is-success is-fullwidth is-large">💾 บันทึกข้อมูล</button>
+            <div class="field">
+                <label class="label">จังหวัด</label>
+                <input id="p" class="input is-medium" type="text" placeholder="ระบุจังหวัด">
+            </div>
+            <div class="field">
+                <label class="label">รหัสตู้ Splitter</label>
+                <input id="s" class="input is-medium" type="text" placeholder="ระบุรหัสตู้">
+            </div>
+            <div class="field">
+                <label class="label">รายละเอียดเพิ่มเติม</label>
+                <textarea id="d" class="textarea" placeholder="ระบุสภาพตู้"></textarea>
+            </div>
+            <button id="btnSubmit" onclick="save()" class="button is-success is-fullwidth is-large">💾 ยืนยันบันทึก</button>
         </div>
     </div>
 
     <script>
+        // --- ⚙️ จุดที่ 1: LIFF ID ของท่าน ---
         const LIFF_ID = "2009634741-xdYCjBwI";
-        // 🚨 URL GAS ล่าสุดที่ท่านส่งมาให้ข้า (ใช้ตัวเดิมเป็น Backend)
+        
+        // --- ⚙️ จุดที่ 2: API URL (Google Script) ของท่าน ---
         const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec";
 
         window.onload = async () => {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); }
-                else {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('formBody').style.display = 'block';
                 }
-            } catch (e) { alert("LIFF Init Error"); }
+            } catch (e) {
+                document.getElementById('loader').innerText = "Init Error: " + e.message;
+            }
         };
 
         async function save() {
-            const btn = document.getElementById('btn');
+            const btn = document.getElementById('btnSubmit');
+            const p = document.getElementById('p').value;
+            const s = document.getElementById('s').value;
+            const d = document.getElementById('d').value;
+
+            if (!p || !s) return alert("กรุณากรอกข้อมูลให้ครบครับ");
+
             btn.classList.add('is-loading');
             
-            const profile = await liff.getProfile();
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const payload = {
-                    userId: profile.userId,
-                    prov: document.getElementById('p').value,
-                    id: document.getElementById('s').value,
-                    detail: document.getElementById('d').value,
-                    latLong: pos.coords.latitude + "," + pos.coords.longitude
-                };
+            try {
+                const profile = await liff.getProfile();
+                
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const payload = {
+                        userId: profile.userId,
+                        prov: p,
+                        id: s,
+                        detail: d,
+                        latLong: pos.coords.latitude + "," + pos.coords.longitude
+                    };
 
-                try {
-                    // ส่งข้อมูลไปที่ GAS (Backend)
+                    // --- ⚙️ จุดที่ 3: การส่งข้อมูล (รวม mode: 'no-cors') ---
                     await fetch(API_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // สำคัญมากสำหรับการส่งจาก GitHub ไป GAS
+                        mode: 'no-cors', // 🚨 นี่คือหัวใจสำคัญที่ทำให้ส่งผ่าน!
                         body: JSON.stringify(payload)
                     });
+
+                    // ส่งข้อความยืนยันในแชท
+                    await liff.sendMessages([{
+                        type: 'text',
+                        text: '✅ บันทึกข้อมูลตู้ [' + s + '] เรียบร้อยแล้ว!'
+                    }]);
                     
-                    await liff.sendMessages([{ type: 'text', text: '✅ บันทึกตู้ [' + payload.id + '] สำเร็จ!' }]);
                     liff.closeWindow();
-                } catch (err) {
-                    alert("ส่งข้อมูลล้มเหลว: " + err.message);
+                }, (err) => {
+                    alert("กรุณาเปิด GPS และอนุญาตสิทธิ์พิกัด");
                     btn.classList.remove('is-loading');
-                }
-            }, () => { alert("กรุณาเปิด GPS"); btn.classList.remove('is-loading'); });
+                });
+
+            } catch (err) {
+                alert("เกิดข้อผิดพลาด: " + err.message);
+                btn.classList.remove('is-loading');
+            }
         }
     </script>
 </body>
