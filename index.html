@@ -1,31 +1,54 @@
 window.onload = async () => {
     try {
         await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); }
-        else {
+        if (!liff.isLoggedIn()) { 
+            liff.login(); 
+        } else {
             const profile = await liff.getProfile();
             userId = profile.userId;
+            
+            // 📡 ดึงสถานะการลงทะเบียนและพิกัดจากระบบ
             const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
             const data = await res.json();
+            
             document.getElementById('loader').style.display = 'none';
 
+            // 🔍 ตรวจสอบสิทธิ์ (The Logic)
             if (data.isRegistered) {
-                // 🛡️ เกราะป้องกัน: ถ้าลงทะเบียนแล้วแต่ไม่มีพิกัด (เปิดเล่นๆ) ให้ไล่ไปส่งรูปใน LINE
+                // กรณีที่ 1: ลงทะเบียนแล้ว และ "ส่งรูปมาแล้ว" (มีพิกัด) -> ให้ไปหน้ากรอกงานทันที
                 if (data.latLong || data.prov) {
                     document.getElementById('formBody').style.display = 'block';
                     document.getElementById('latLong').value = data.latLong;
                     document.getElementById('prov').value = data.prov;
+                    
                 } else {
+                    // กรณีที่ 2: ลงทะเบียนแล้ว แต่ "เปิดเล่นๆ" (ไม่มีพิกัด) -> ปิดทึบและแจ้งเตือน
+                    document.getElementById('regForm').innerHTML = `
+                        <div class="notification is-success is-light has-text-centered py-6">
+                            <p class="title is-5">✅ ท่านลงทะเบียนสำเร็จแล้ว</p>
+                            <p class="subtitle is-6">ชื่อ: <strong>${data.registeredName}</strong></p>
+                            <hr>
+                            <p class="is-size-7 has-text-grey">ระบบบันทึกชื่อท่านไว้แล้วครับ</p>
+                            <p class="is-size-7 mt-2"><b>ขั้นตอนต่อไป:</b> ส่งภาพหน้างานในแชท LINE<br>เพื่อรับแบบฟอร์มบันทึกข้อมูล</p>
+                            <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">รับทราบ (ปิดหน้าต่างนี้)</button>
+                        </div>`;
+                    document.getElementById('regForm').style.display = 'block';
+                    
+                    // เพิ่ม SweetAlert เพื่อความชัดเจน (ใช้จากชุดที่ 2 ของท่าน)
                     Swal.fire({
-                        title: 'ลงทะเบียนแล้ว',
-                        text: 'ท่านมีชื่อในระบบแล้วครับ ดำเนินการส่งภาพงานในแชท LINE ได้เลย!',
-                        icon: 'info',
-                        confirmButtonText: 'รับทราบ'
-                    }).then(() => liff.closeWindow());
+                        title: 'ยินดีต้อนรับกลับ',
+                        text: 'ท่านลงทะเบียนแล้ว ดำเนินการส่งภาพใน LINE ได้เลยครับ',
+                        icon: 'success',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
                 }
             } else {
+                // กรณีที่ 3: ยังไม่ได้ลงทะเบียน -> แสดงฟอร์มลงทะเบียนปกติ
                 document.getElementById('regForm').style.display = 'block';
             }
         }
-    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+    } catch (err) { 
+        Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' + err.message, 'error'); 
+    }
 };
