@@ -1,34 +1,47 @@
 window.onload = async () => {
     try {
         await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); }
-        else {
+        if (!liff.isLoggedIn()) { 
+            liff.login(); 
+        } else {
             const profile = await liff.getProfile();
-            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${profile.userId}`);
+            userId = profile.userId;
+
+            // 📡 ดึงข้อมูลจากหลังบ้าน
+            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
             const data = await res.json();
+            
             document.getElementById('loader').style.display = 'none';
 
             if (data.isRegistered) {
-                // 🛡️ ปิดทึบหน้าลงทะเบียนทันที
+                // 🛡️ เคส: ลงทะเบียนแล้ว -> ทำการ "ปิดตาย" หน้าลงทะเบียนเดิมทันที
                 const regForm = document.getElementById('regForm');
+                
+                // ใส่ HTML เข้าไปเพื่อให้แสดงผลสวยงามและมีปุ่มที่ทำงานได้จริง
                 regForm.innerHTML = `
-                    <div class="notification is-success is-light has-text-centered py-6">
+                    <div class="notification is-success is-light has-text-centered py-5">
                         <p class="title is-5">✅ ลงทะเบียนแล้ว</p>
-                        <p class="subtitle is-6">เจ้าหน้าที่: ${data.registeredName}</p>
-                        <hr><p class="is-size-7">ดำเนินการส่งภาพหน้างานใน LINE เพื่อบันทึกข้อมูล</p>
-                        <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">ปิดหน้าต่าง</button>
+                        <p class="subtitle is-6">เจ้าหน้าที่: <strong>${data.registeredName}</strong></p>
+                        <hr>
+                        <p class="is-size-7">ระบบบันทึกข้อมูลท่านเรียบร้อยแล้ว</p>
+                        <p class="is-size-7 has-text-weight-bold mt-2">ดำเนินการส่งภาพหน้างานใน LINE<br>เพื่อบันทึกข้อมูลงานใหม่ครับ</p>
+                        <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">ปิดหน้าต่างนี้</button>
                     </div>`;
                 regForm.style.display = 'block';
 
+                // 🚀 เคสพิเศษ: ถ้ามีพิกัดพ่วงมาด้วย (ช่างเพิ่งส่งรูปมา) -> ข้ามไปหน้ากรอกงานทันที
                 if (data.latLong || data.prov) {
-                    regForm.style.display = 'none';
-                    document.getElementById('formBody').style.display = 'block';
+                    regForm.style.display = 'none'; // ซ่อนส่วนทะเบียนที่ปิดตายไว้
+                    document.getElementById('formBody').style.display = 'block'; // โชว์ฟอร์มกรอกงาน
                     document.getElementById('latLong').value = data.latLong;
                     document.getElementById('prov').value = data.prov;
                 }
             } else {
+                // 🆕 เคส: ช่างใหม่ -> แสดงฟอร์มลงทะเบียนปกติ
                 document.getElementById('regForm').style.display = 'block';
             }
         }
-    } catch (e) { document.getElementById('loader').innerHTML = "Error: " + e.message; }
+    } catch (e) { 
+        document.getElementById('loader').innerHTML = `<div class="notification is-danger">Error: ${e.message}</div>`; 
+    }
 };
