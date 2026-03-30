@@ -1,131 +1,31 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Splitter Management System</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .system-header { background-color: #004d40; color: white; padding: 2rem 1rem; text-align: center; border-bottom: 5px solid #00c853; }
-        .box { border-radius: 12px; margin-top: -30px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-        .label { color: #555; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
-        .locked-field { background-color: #f1f3f4 !important; color: #7f8c8d !important; cursor: not-allowed; }
-    </style>
-</head>
-<body>
-    <div class="system-header">
-        <h1 class="title is-4 has-text-white">SPLITTER SYSTEM</h1>
-        <p class="subtitle is-7 has-text-white-ter">Digital Onboarding Unit</p>
-    </div>
+window.onload = async () => {
+    try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); }
+        else {
+            const profile = await liff.getProfile();
+            userId = profile.userId;
+            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
+            const data = await res.json();
+            document.getElementById('loader').style.display = 'none';
 
-    <div class="container p-3">
-        <div id="loader" class="has-text-centered py-6">
-            <button class="button is-loading is-white is-large"></button>
-            <p class="is-size-7 mt-3">กำลังเชื่อมต่อระบบ...</p>
-        </div>
-
-        <div id="regForm" class="box" style="display:none;">
-            <h2 class="title is-5 has-text-success">📝 ลงทะเบียนเจ้าหน้าที่</h2>
-            <p class="is-size-7 mb-4 has-text-grey">ลงทะเบียนเพียงครั้งเดียวเพื่อเริ่มใช้งานระบบ</p>
-            <div class="field">
-                <label class="label">ชื่อ-นามสกุลจริง</label>
-                <input id="regName" class="input" type="text" placeholder="ระบุชื่อจริง">
-            </div>
-            <div class="field">
-                <label class="label">รหัสพนักงาน</label>
-                <input id="regEmpId" class="input" type="text" placeholder="ระบุรหัสพนักงาน">
-            </div>
-            <div class="field">
-                <label class="label">อีเมลติดต่อ</label>
-                <input id="regEmail" class="input" type="email" placeholder="example@mail.com">
-            </div>
-            <button onclick="submitRegistration()" class="button is-success is-fullwidth has-text-weight-bold mt-4">ยืนยันลงทะเบียน</button>
-        </div>
-
-        <div id="formBody" class="box" style="display:none;">
-            <div class="columns is-mobile">
-                <div class="column"><label class="label">พิกัด</label><input id="latLong" class="input is-small locked-field" readonly></div>
-                <div class="column"><label class="label">จังหวัด</label><input id="prov" class="input is-small locked-field" readonly></div>
-            </div>
-            <hr class="my-4">
-            <div class="field">
-                <label class="label">รหัสอุปกรณ์ (Equipment ID)</label>
-                <input id="spId" class="input is-success" type="text" placeholder="กรอกรหัสอุปกรณ์" oninput="this.value = this.value.toUpperCase()">
-            </div>
-            <div class="field">
-                <label class="label">หมวดหมู่ตรวจสอบ</label>
-                <div class="select is-fullwidth">
-                    <select id="mainCase" onchange="updateSubCase()">
-                        <option value="">-- เลือกรายการ --</option>
-                        <option value="1. ภายนอก อุปกรณ์">1. สภาพภายนอก</option>
-                        <option value="2. ภายใน อุปกรณ์">2. ระบบภายใน</option>
-                        <option value="3. งานย้ายและร้องเรียน">3. ร้องเรียน/ปรับปรุง</option>
-                    </select>
-                </div>
-            </div>
-            <div class="field">
-                <label class="label">รายละเอียดปัญหาย่อย</label>
-                <div class="select is-fullwidth"><select id="subCase"><option value="">เลือกกรณีหลักก่อน</option></select></div>
-            </div>
-            <div class="field"><label class="label">หมายเหตุเพิ่มเติม</label><textarea id="detail" class="textarea is-small" rows="2"></textarea></div>
-            <button id="btnSave" onclick="submitData()" class="button is-success is-fullwidth has-text-weight-bold is-medium mt-5">💾 บันทึกข้อมูลเข้าระบบ</button>
-        </div>
-    </div>
-
-    <script>
-        const LIFF_ID = "2009634741-xdYCjBwI";
-        const API_URL = "https://script.google.com/macros/s/AKfycbzv8K1js2mArjDla9JJuDTV1QDQg44LoapMJKCvQQ2UXE2lw-TXufJCRXGJgpXdZf37nQ/exec";
-        const subCaseMap = { "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิดชำรุด/หาย", "1.2 สัตว์ทำรัง", "1.3 สายหย่อน", "1.4 ตัวล็อกชำรุด"], "2. ภายใน อุปกรณ์": ["2.1 พอร์ตชำรุด", "2.2 Connector เสื่อมสภาพ", "2.3 ค่า Loss เกินมาตรฐาน"], "3. งานย้ายและร้องเรียน": ["3.1 ย้ายแนวสาย", "3.2 เคสร้องเรียน", "3.3 กิ่งไม้บดบัง"] };
-        let userId = "";
-
-        window.onload = async () => {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); }
-                else {
-                    const profile = await liff.getProfile();
-                    userId = profile.userId;
-                    const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
-                    const data = await res.json();
-                    document.getElementById('loader').style.display = 'none';
-                    if (!data.isRegistered) { document.getElementById('regForm').style.display = 'block'; }
-                    else {
-                        document.getElementById('formBody').style.display = 'block';
-                        if (data.latLong) document.getElementById('latLong').value = data.latLong;
-                        if (data.prov) document.getElementById('prov').value = data.prov;
-                    }
+            if (data.isRegistered) {
+                // 🛡️ เกราะป้องกัน: ถ้าลงทะเบียนแล้วแต่ไม่มีพิกัด (เปิดเล่นๆ) ให้ไล่ไปส่งรูปใน LINE
+                if (data.latLong || data.prov) {
+                    document.getElementById('formBody').style.display = 'block';
+                    document.getElementById('latLong').value = data.latLong;
+                    document.getElementById('prov').value = data.prov;
+                } else {
+                    Swal.fire({
+                        title: 'ลงทะเบียนแล้ว',
+                        text: 'ท่านมีชื่อในระบบแล้วครับ ดำเนินการส่งภาพงานในแชท LINE ได้เลย!',
+                        icon: 'info',
+                        confirmButtonText: 'รับทราบ'
+                    }).then(() => liff.closeWindow());
                 }
-            } catch (err) { Swal.fire('Error', err.message, 'error'); }
-        };
-
-        async function submitRegistration() {
-            const name = document.getElementById('regName').value;
-            const empId = document.getElementById('regEmpId').value;
-            const email = document.getElementById('regEmail').value;
-            if(!name || !empId || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกให้ครบทุกช่องครับ', 'warning');
-            Swal.showLoading();
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "registerUser", userId, name, empId, email }) });
-            if (await res.text() === "REGISTER_SUCCESS") { Swal.fire('สำเร็จ', 'ลงทะเบียนเรียบร้อย!', 'success').then(() => location.reload()); }
+            } else {
+                document.getElementById('regForm').style.display = 'block';
+            }
         }
-
-        function updateSubCase() {
-            const main = document.getElementById('mainCase').value;
-            const sub = document.getElementById('subCase');
-            sub.innerHTML = '<option value="">-- เลือกรายละเอียด --</option>';
-            if (subCaseMap[main]) { subCaseMap[main].forEach(item => { sub.innerHTML += `<option value="${item}">${item}</option>`; }); }
-        }
-
-        async function submitData() {
-            if (!document.getElementById('spId').value || !document.getElementById('mainCase').value) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลสำคัญให้ครบครับ', 'warning');
-            const btn = document.getElementById('btnSave'); btn.classList.add('is-loading');
-            const payload = { userId, id: document.getElementById('spId').value, type: "Splitter", case: document.getElementById('mainCase').value, subCase: document.getElementById('subCase').value, detail: document.getElementById('detail').value, prov: document.getElementById('prov').value, latLong: document.getElementById('latLong').value };
-            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            if (await response.text() === "ALREADY_SAVED") { Swal.fire('บันทึกซ้ำ', 'รายการนี้บันทึกไปแล้วครับ', 'error').then(() => liff.closeWindow()); }
-            else { Swal.fire({ icon: 'success', title: 'สำเร็จ', timer: 2000, showConfirmButton: false }).then(() => liff.closeWindow()); }
-        }
-    </script>
-</body>
-</html>
+    } catch (err) { Swal.fire('Error', err.message, 'error'); }
+};
