@@ -1,95 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>บันทึกตู้ Splitter</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-</head>
-<body style="padding:20px; background:#f5f7fa;">
-    <div class="box">
-        <h1 class="title is-4 has-text-centered">บันทึกตู้ Splitter</h1>
-        <div id="loader" class="has-text-centered py-5">⌛ กำลังโหลดระบบ...</div>
-        
-        <div id="regStatus" style="display:none;"></div>
-
-        <div id="formBody" style="display:none;">
-            <label class="label">พิกัด/จังหวัด (จากรูปอัตโนมัติ)</label>
-            <input id="prov" class="input mb-3" type="text" placeholder="รอพิกัดจากรูป...">
-            <label class="label">รหัสตู้</label>
-            <input id="sID" class="input mb-3" type="text" placeholder="เช่น SPL-BKK-001">
-            <label class="label">รายละเอียดงาน</label>
-            <textarea id="detail" class="textarea mb-3" placeholder="ระบุรายละเอียด..."></textarea>
-            <button id="btnSave" onclick="save()" class="button is-success is-fullwidth is-large">💾 บันทึกข้อมูลตู้</button>
-        </div>
-    </div>
-
-    <script>
-        const LIFF_ID = "2009634741-xdYCjBwI";
-        const API_URL = "https://line-webhook-receiver-1008123539373.asia-southeast1.run.app"; 
-        let userData = {};
-
-        window.onload = async () => {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); }
-            else {
-                const profile = await liff.getProfile();
-                userData.uid = profile.userId;
-                userData.name = profile.displayName;
-
-                // 📡 ดึงข้อมูลจาก Google Cloud
-                try {
-                    const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userData.uid}`);
-                    const data = await res.json();
-                    
-                    document.getElementById('loader').style.display = 'none';
-
-                    if (data.isRegistered) {
-                        // โชว์สถานะว่าลงทะเบียนแล้ว
-                        const status = document.getElementById('regStatus');
-                        status.innerHTML = `<div class="notification is-info is-light">เจ้าหน้าที่: <b>${data.registeredName}</b></div>`;
-                        status.style.display = 'block';
-
-                        // ถ้ามีพิกัดจากรูป โชว์ฟอร์มกรอกงานเลย
-                        if (data.latLong) {
-                            document.getElementById('formBody').style.display = 'block';
-                            document.getElementById('prov').value = data.latLong;
-                        } else {
-                            status.innerHTML += `<p class="has-text-centered mt-3">⚠️ โปรดส่งรูปหน้างานใน LINE ก่อนครับ</p>`;
-                        }
-                    } else {
-                        document.getElementById('loader').innerHTML = `<div class="notification is-danger">⚠️ ท่านยังไม่ได้ลงทะเบียนในระบบ</div>`;
-                    }
-                } catch (e) { console.error(e); }
-            }
-        };
-
-        async function save() {
-            const btn = document.getElementById('btnSave');
-            btn.classList.add('is-loading');
+window.onload = async () => {
+    try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); }
+        else {
+            const profile = await liff.getProfile();
             
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const payload = {
-                    action: "saveEntry",
-                    uid: userData.uid,
-                    name: userData.name,
-                    prov: document.getElementById('prov').value,
-                    id: document.getElementById('sID').value,
-                    detail: document.getElementById('detail').value,
-                    latLong: pos.coords.latitude + "," + pos.coords.longitude
-                };
+            // 🎯 จุดแก้ที่ 1: เปลี่ยน action เป็น checkUser 
+            const res = await fetch(`${API_URL}?action=checkUser&uid=${profile.userId}`);
+            const data = await res.json();
+            document.getElementById('loader').style.display = 'none';
 
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                liff.sendMessages([{ type: 'text', text: '✅ บันทึกตู้ ' + payload.id + ' เรียบร้อย!' }]);
-                setTimeout(() => { liff.closeWindow(); }, 1000);
-            });
+            if (data.isRegistered) {
+                // 🛡️ ปิดทึบหน้าลงทะเบียนทันที
+                const regForm = document.getElementById('regForm');
+                regForm.innerHTML = `
+                    <div class="notification is-success is-light has-text-centered py-6">
+                        <p class="title is-5">✅ ลงทะเบียนแล้ว</p>
+                        <p class="subtitle is-6">เจ้าหน้าที่: ${data.name}</p> <hr><p class="is-size-7">ดำเนินการส่งภาพหน้างานใน LINE เพื่อบันทึกข้อมูล</p>
+                        <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">ปิดหน้าต่าง</button>
+                    </div>`;
+                regForm.style.display = 'block';
+
+                // 🎯 ฟอร์มจะแสดงก็ต่อเมื่อ Backend ส่ง latLong หรือ prov มาให้
+                if (data.latLong || data.prov) {
+                    regForm.style.display = 'none';
+                    document.getElementById('formBody').style.display = 'block';
+                    document.getElementById('latLong').value = data.latLong || '';
+                    document.getElementById('prov').value = data.prov || '';
+                }
+            } else {
+                document.getElementById('regForm').style.display = 'block';
+            }
         }
-    </script>
-</body>
-</html>
+    } catch (e) { document.getElementById('loader').innerHTML = "Error: " + e.message; }
+};
