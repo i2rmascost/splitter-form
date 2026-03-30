@@ -1,54 +1,126 @@
-window.onload = async () => {
-    try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { 
-            liff.login(); 
-        } else {
-            const profile = await liff.getProfile();
-            userId = profile.userId;
-            
-            // 📡 ดึงสถานะการลงทะเบียนและพิกัดจากระบบ
-            const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
-            const data = await res.json();
-            
-            document.getElementById('loader').style.display = 'none';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Splitter System V.10.9</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+        .system-header { background-color: #004d40; color: white; padding: 2rem 1rem; text-align: center; border-bottom: 5px solid #00c853; }
+        /* ⚡ จุดสำคัญ: ทุกส่วนต้องซ่อนไว้ก่อน (display: none) เพื่อไม่ให้แสดงผลปนกัน */
+        .box { border-radius: 12px; margin-top: -30px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); display: none; }
+        .loader-wrapper { padding: 3rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="system-header">
+        <h1 class="title is-4 has-text-white">SPLITTER SYSTEM</h1>
+        <p class="subtitle is-7 has-text-white-ter">Digital Onboarding Unit V.10.9</p>
+    </div>
 
-            // 🔍 ตรวจสอบสิทธิ์ (The Logic)
-            if (data.isRegistered) {
-                // กรณีที่ 1: ลงทะเบียนแล้ว และ "ส่งรูปมาแล้ว" (มีพิกัด) -> ให้ไปหน้ากรอกงานทันที
-                if (data.latLong || data.prov) {
-                    document.getElementById('formBody').style.display = 'block';
-                    document.getElementById('latLong').value = data.latLong;
-                    document.getElementById('prov').value = data.prov;
-                    
+    <div class="container p-3">
+        <div id="loader" class="loader-wrapper">
+            <button class="button is-loading is-white is-large"></button>
+            <p class="is-size-7 mt-3">กำลังตรวจสอบสิทธิ์เข้าใช้งาน...</p>
+        </div>
+
+        <div id="regForm" class="box p-5">
+            <h2 class="title is-5 has-text-success">📝 ลงทะเบียนเจ้าหน้าที่</h2>
+            <p class="is-size-7 mb-4 has-text-grey">กรอกข้อมูลเพื่อเปิดใช้งานระบบครั้งแรก</p>
+            <div class="field">
+                <label class="label">ชื่อ-นามสกุล</label>
+                <input id="regName" class="input" type="text" placeholder="ระบุชื่อจริง">
+            </div>
+            <div class="field">
+                <label class="label">รหัสพนักงาน</label>
+                <input id="regEmpId" class="input" type="text" placeholder="ระบุรหัสพนักงาน">
+            </div>
+            <div class="field">
+                <label class="label">อีเมล</label>
+                <input id="regEmail" class="input" type="email" placeholder="example@mail.com">
+            </div>
+            <button onclick="submitRegistration()" class="button is-success is-fullwidth has-text-weight-bold mt-4">ยืนยันลงทะเบียน</button>
+        </div>
+
+        <div id="formBody" class="box p-5">
+            <div class="columns is-mobile">
+                <div class="column">
+                    <label class="label is-small">พิกัด</label>
+                    <input id="latLong" class="input is-small is-static" readonly>
+                </div>
+                <div class="column">
+                    <label class="label is-small">จังหวัด</label>
+                    <input id="prov" class="input is-small is-static" readonly>
+                </div>
+            </div>
+            <hr>
+            <div class="field">
+                <label class="label">รหัสอุปกรณ์ (ID)</label>
+                <input id="spId" class="input is-success" type="text" placeholder="กรอกรหัสอุปกรณ์" oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <button id="btnSave" onclick="submitData()" class="button is-success is-fullwidth has-text-weight-bold is-medium mt-5">💾 บันทึกข้อมูล</button>
+        </div>
+    </div>
+
+    <script>
+        const LIFF_ID = "2009634741-xdYCjBwI";
+        const API_URL = "https://script.google.com/macros/s/AKfycb.../exec"; // ⚠️ เปลี่ยนเป็น URL ล่าสุดของท่าน
+
+        window.onload = async () => {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { 
+                    liff.login(); 
                 } else {
-                    // กรณีที่ 2: ลงทะเบียนแล้ว แต่ "เปิดเล่นๆ" (ไม่มีพิกัด) -> ปิดทึบและแจ้งเตือน
-                    document.getElementById('regForm').innerHTML = `
-                        <div class="notification is-success is-light has-text-centered py-6">
-                            <p class="title is-5">✅ ท่านลงทะเบียนสำเร็จแล้ว</p>
-                            <p class="subtitle is-6">ชื่อ: <strong>${data.registeredName}</strong></p>
-                            <hr>
-                            <p class="is-size-7 has-text-grey">ระบบบันทึกชื่อท่านไว้แล้วครับ</p>
-                            <p class="is-size-7 mt-2"><b>ขั้นตอนต่อไป:</b> ส่งภาพหน้างานในแชท LINE<br>เพื่อรับแบบฟอร์มบันทึกข้อมูล</p>
-                            <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">รับทราบ (ปิดหน้าต่างนี้)</button>
-                        </div>`;
-                    document.getElementById('regForm').style.display = 'block';
+                    const profile = await liff.getProfile();
+                    const userId = profile.userId;
                     
-                    // เพิ่ม SweetAlert เพื่อความชัดเจน (ใช้จากชุดที่ 2 ของท่าน)
-                    Swal.fire({
-                        title: 'ยินดีต้อนรับกลับ',
-                        text: 'ท่านลงทะเบียนแล้ว ดำเนินการส่งภาพใน LINE ได้เลยครับ',
-                        icon: 'success',
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
+                    const res = await fetch(`${API_URL}?action=getDetectedProv&uid=${userId}`);
+                    const data = await res.json();
+                    
+                    document.getElementById('loader').style.display = 'none';
+
+                    if (data.isRegistered) {
+                        // 🛡️ เคส 1: ลงทะเบียนแล้ว + มีรูปที่ประมวลผลอยู่ -> โชว์หน้ากรอกงาน
+                        if (data.latLong || data.prov) {
+                            document.getElementById('formBody').style.display = 'block';
+                            document.getElementById('latLong').value = data.latLong;
+                            document.getElementById('prov').value = data.prov;
+                        } 
+                        // 🛡️ เคส 2: ลงทะเบียนแล้ว แต่เปิดเข้ามาเฉยๆ -> ปิดทึบและแจ้งเตือน
+                        else {
+                            document.getElementById('regForm').innerHTML = `
+                                <div class="notification is-success is-light has-text-centered py-6">
+                                    <p class="title is-5">✅ ลงทะเบียนสำเร็จแล้ว</p>
+                                    <p class="subtitle is-6">ชื่อ: <strong>${data.registeredName}</strong></p>
+                                    <hr>
+                                    <p class="is-size-7 mt-2"><b>ขั้นตอนต่อไป:</b> ส่งภาพหน้างานในแชท LINE<br>เพื่อรับแบบฟอร์มบันทึกข้อมูล</p>
+                                    <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">รับทราบ (ปิดหน้าต่างนี้)</button>
+                                </div>`;
+                            document.getElementById('regForm').style.display = 'block';
+                            
+                            Swal.fire({
+                                title: 'ยืนยันตัวตนสำเร็จ',
+                                text: 'ท่านอยู่ในระบบแล้วครับ ดำเนินการส่งภาพใน LINE ได้เลย',
+                                icon: 'success',
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                        }
+                    } else {
+                        // 🛡️ เคส 3: ช่างใหม่ -> โชว์หน้าลงทะเบียน
+                        document.getElementById('regForm').style.display = 'block';
+                    }
                 }
-            } else {
-                // กรณีที่ 3: ยังไม่ได้ลงทะเบียน -> แสดงฟอร์มลงทะเบียนปกติ
-                document.getElementById('regForm').style.display = 'block';
+            } catch (err) { 
+                Swal.fire('Error', 'การเชื่อมต่อฐานข้อมูลล้มเหลว', 'error'); 
             }
-        }
-    } catch (err) { 
-        Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' + err.message, 'error'); 
-    }
-};
+        };
+
+        // ... (ฟังก์ชัน submitRegistration และ submitData คงเดิม) ...
+    </script>
+</body>
+</html>
