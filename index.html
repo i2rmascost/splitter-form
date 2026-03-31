@@ -3,52 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>บันทึกข้อมูล Splitter Box (Cloud Run v.2026)</title>
+    <title>ระบบบันทึกข้อมูล Splitter (Cloud Run v2)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { background-color: #f4f6f9; padding: 20px 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .box { border-radius: 15px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-top: 5px solid #485fc7; }
-        .label { color: #4a4a4a; margin-bottom: 0.2rem; }
-        .notification { border-radius: 10px; }
-        #btnSave { transition: all 0.3s; }
-        #btnSave:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        body { background-color: #f0f2f5; padding: 15px; font-family: 'Chakra Petch', sans-serif; }
+        .box { border-radius: 15px; border-top: 6px solid #485fc7; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .label { font-size: 0.9rem; color: #363636; }
+        .notification { border-radius: 10px; margin-bottom: 1.5rem; }
+        .button.is-link { font-weight: bold; height: 3.5rem; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container is-max-desktop">
         <div class="box" id="mainForm" style="display: none;">
-            <h1 class="title is-4 has-text-centered mb-4">📸 บันทึกข้อมูลงาน Splitter</h1>
+            <h1 class="title is-4 has-text-centered mb-5">📝 บันทึกข้อมูลงาน Splitter</h1>
             
-            <div id="statusBox" class="notification is-info is-light py-2 px-3 mb-4 has-text-centered">
-                <p id="locInfo" class="is-size-6 has-text-weight-bold">📡 กำลังดึงพิกัดจากระบบ AI...</p>
+            <div id="statusBox" class="notification is-link is-light has-text-centered py-3">
+                <p id="locInfo" class="is-size-6">📡 กำลังดึงข้อมูลพิกัดจาก AI...</p>
             </div>
             
             <form id="dataForm" onsubmit="submitData(event)">
                 <div class="field">
-                    <label class="label is-small">Splitter ID / รหัสอุปกรณ์</label>
+                    <label class="label">รหัสอุปกรณ์ (Splitter ID)</label>
                     <div class="control">
-                        <input id="spId" class="input is-link" type="text" placeholder="ตัวอย่าง: BKK-1234" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')" required>
+                        <input id="spId" class="input is-medium" type="text" placeholder="ตัวอย่าง: NRT-101" style="text-transform: uppercase;" required>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label class="label is-small">ประเภทอุปกรณ์</label>
+                    <label class="label">ประเภทอุปกรณ์</label>
                     <div class="control">
-                        <div class="select is-fullwidth is-link">
+                        <div class="select is-fullwidth is-medium">
                             <select id="type" required>
-                                <option>L2 (Splitter)</option>
-                                <option>L1 (FDT)</option>
-                                <option>OLT / Port</option>
+                                <option>L2</option>
+                                <option>L1</option>
+                                <option>OLT</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label class="label is-small">หมวดหมู่ความเสียหาย</label>
+                    <label class="label">หมวดหมู่ปัญหา</label>
                     <div class="control">
-                        <div class="select is-fullwidth is-link">
+                        <div class="select is-fullwidth is-medium">
                             <select id="mainCase" onchange="updateSubCase()" required>
                                 <option value="" disabled selected>-- เลือกหมวดหมู่ --</option>
                                 <option>1. ภายนอก อุปกรณ์</option>
@@ -59,9 +58,9 @@
                 </div>
 
                 <div class="field">
-                    <label class="label is-small">อาการที่พบ (Sub-Case)</label>
+                    <label class="label">อาการที่พบ</label>
                     <div class="control">
-                        <div class="select is-fullwidth is-link">
+                        <div class="select is-fullwidth is-medium">
                             <select id="subCase" required>
                                 <option value="" disabled selected>-- เลือกหมวดหมู่ก่อน --</option>
                             </select>
@@ -70,43 +69,36 @@
                 </div>
 
                 <div class="field">
-                    <label class="label is-small">รายละเอียดเพิ่มเติม / หมายเหตุ</label>
+                    <label class="label">หมายเหตุ / รายละเอียด</label>
                     <div class="control">
-                        <textarea id="remark" class="textarea is-link" placeholder="ระบุสิ่งที่พบเพิ่มเติม..." rows="3" required></textarea>
+                        <textarea id="remark" class="textarea" placeholder="ระบุข้อมูลเพิ่มเติม..." rows="3" required></textarea>
                     </div>
                 </div>
 
-                <hr>
-
-                <div class="buttons mt-5">
-                    <button type="submit" id="btnSave" class="button is-link is-fullwidth is-medium has-text-weight-bold">💾 บันทึกข้อมูลลงตาราง</button>
-                    <button type="button" onclick="liff.closeWindow()" class="button is-light is-fullwidth">ยกเลิก</button>
+                <div class="mt-6">
+                    <button type="submit" id="btnSave" class="button is-link is-fullwidth">💾 บันทึกข้อมูลลงตาราง</button>
+                    <button type="button" onclick="liff.closeWindow()" class="button is-ghost is-fullwidth mt-2">ยกเลิก</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // 🧠 คอนฟิกหลัก (ตรงกับ Backend Cloud Run)
-        const API_URL = "https://line-webhook-receiver-1008123539373.asia-southeast1.run.app"; 
+        // 🔗 URL ของ Cloud Run functions ที่ท่าน Deploy สำเร็จ
+        const API_URL = "https://asia-southeast1-my-project-translate-400506.cloudfunctions.net/lineWebhook"; 
         const LIFF_ID = "2009632305"; 
-        
-        let cacheData = {}; 
 
+        let cacheData = {}; 
         const subCases = {
-            "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิด/ตัวล็อกชำรุด", "1.2 ไม่ได้ยึดเกาะตามมาตรฐาน", "1.3 ตำแหน่งต่ำ/หย่อน", "1.4 มีสัตว์ทำรังภายใน"],
-            "2. ภายใน อุปกรณ์": ["2.1 Port เสีย/ชำรุด", "2.2 Connector/Pigtail เสื่อมสภาพ", "2.3 สายภายในพันกันยุ่งเหยิง"]
+            "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิดชำรุด", "1.2 ไม่ได้ยึดตามมาตรฐาน", "1.3 สายหย่อน/ต่ำ", "1.4 สัตว์ทำรัง"],
+            "2. ภายใน อุปกรณ์": ["2.1 Port เสีย", "2.2 Connector เสื่อมสภาพ", "2.3 สายพันกัน"]
         };
 
         function updateSubCase() {
             const main = document.getElementById('mainCase').value;
             const sub = document.getElementById('subCase');
-            sub.innerHTML = '<option value="" disabled selected>-- เลือกอาการที่พบ --</option>';
-            if(subCases[main]) {
-                subCases[main].forEach(item => {
-                    sub.innerHTML += `<option value="${item}">${item}</option>`;
-                });
-            }
+            sub.innerHTML = '<option value="" disabled selected>-- เลือกอาการ --</option>';
+            if(subCases[main]) subCases[main].forEach(i => sub.innerHTML += `<option value="${i}">${i}</option>`);
         }
 
         window.onload = async () => {
@@ -116,22 +108,22 @@
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    // ดึงข้อมูลพิกัดที่ AI วิเคราะห์ค้างไว้จาก Firestore
+                    // ตรวจสอบพิกัดที่ AI บันทึกไว้ใน Firestore
                     const res = await fetch(`${API_URL}/api/checkUser?uid=${profile.userId}`);
                     const data = await res.json();
                     
                     if (data.cache) {
                         cacheData = data.cache;
-                        document.getElementById('locInfo').innerText = `📍 พิกัด: ${cacheData.latLong}`;
+                        document.getElementById('locInfo').innerText = `📍 พิกัดที่ตรวจพบ: ${cacheData.latLong}`;
                         document.getElementById('mainForm').style.display = 'block';
                     } else {
-                        alert("⚠️ ไม่พบข้อมูลพิกัดในระบบ! กรุณาส่งรูปภาพเข้า LINE Bot เพื่อให้ AI สแกนก่อนเปิดหน้านี้ครับ");
+                        alert("⚠️ ไม่พบข้อมูลพิกัด! กรุณาส่งรูปเข้า LINE Bot เพื่อให้ AI สแกนก่อนครับ");
                         liff.closeWindow();
                     }
                 }
             } catch (err) {
                 console.error(err);
-                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+                alert("❌ การเชื่อมต่อล้มเหลว");
             }
         };
 
@@ -139,7 +131,6 @@
             e.preventDefault();
             const btn = document.getElementById('btnSave');
             btn.classList.add('is-loading');
-            btn.disabled = true;
 
             const profile = await liff.getProfile();
             const payload = {
@@ -164,16 +155,15 @@
                 const result = await res.json();
 
                 if (result.success) {
-                    alert(`✅ บันทึกสำเร็จ!\nรหัสคิว: ${result.queueId}`);
+                    alert(`✅ บันทึกสำเร็จ!\nคิวงาน: ${result.queueId}`);
                     liff.closeWindow();
                 } else {
-                    alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown Error"));
+                    alert("❌ บันทึกไม่สำเร็จ: " + result.error);
                 }
             } catch (err) {
                 alert("❌ ติดต่อเซิร์ฟเวอร์ไม่ได้");
             } finally {
                 btn.classList.remove('is-loading');
-                btn.disabled = false;
             }
         }
     </script>
