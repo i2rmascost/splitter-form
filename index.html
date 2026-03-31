@@ -1,36 +1,146 @@
-window.onload = async () => {
-    try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); }
-        else {
-            const profile = await liff.getProfile();
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>บันทึกข้อมูล Splitter Box</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { background-color: #f4f6f9; padding: 20px 10px; }
+        .box { border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+    <div class="container is-max-desktop">
+        <div class="box" id="mainForm" style="display: none;">
+            <h1 class="title is-5 has-text-centered mb-2">📸 บันทึกข้อมูล Splitter Box</h1>
+            <div class="notification is-info is-light py-2 px-3 mb-4 text-is-centered">
+                <p id="locInfo" class="is-size-7 has-text-weight-semibold">กำลังดึงข้อมูลพิกัด...</p>
+            </div>
             
-            // 🎯 จุดแก้ที่ 1: เปลี่ยน action เป็น checkUser 
-            const res = await fetch(`${API_URL}?action=checkUser&uid=${profile.userId}`);
-            const data = await res.json();
-            document.getElementById('loader').style.display = 'none';
+            <form id="dataForm" onsubmit="submitData(event)">
+                <div class="field">
+                    <label class="label is-small">Splitter ID</label>
+                    <div class="control">
+                        <input id="spId" class="input" type="text" placeholder="ระบุตัวอักษรและตัวเลข" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')" required>
+                    </div>
+                </div>
 
-            if (data.isRegistered) {
-                // 🛡️ ปิดทึบหน้าลงทะเบียนทันที
-                const regForm = document.getElementById('regForm');
-                regForm.innerHTML = `
-                    <div class="notification is-success is-light has-text-centered py-6">
-                        <p class="title is-5">✅ ลงทะเบียนแล้ว</p>
-                        <p class="subtitle is-6">เจ้าหน้าที่: ${data.name}</p> <hr><p class="is-size-7">ดำเนินการส่งภาพหน้างานใน LINE เพื่อบันทึกข้อมูล</p>
-                        <button onclick="liff.closeWindow()" class="button is-success is-fullwidth mt-5">ปิดหน้าต่าง</button>
-                    </div>`;
-                regForm.style.display = 'block';
+                <div class="field">
+                    <label class="label is-small">ประเภทอุปกรณ์ (Type)</label>
+                    <div class="control"><div class="select is-fullwidth"><select id="type" required><option>L2</option><option>L1</option><option>OLT</option></select></div></div>
+                </div>
 
-                // 🎯 ฟอร์มจะแสดงก็ต่อเมื่อ Backend ส่ง latLong หรือ prov มาให้
-                if (data.latLong || data.prov) {
-                    regForm.style.display = 'none';
-                    document.getElementById('formBody').style.display = 'block';
-                    document.getElementById('latLong').value = data.latLong || '';
-                    document.getElementById('prov').value = data.prov || '';
-                }
-            } else {
-                document.getElementById('regForm').style.display = 'block';
+                <div class="field">
+                    <label class="label is-small">หมวดหมู่ความเสียหาย (Case)</label>
+                    <div class="control"><div class="select is-fullwidth"><select id="mainCase" onchange="updateSubCase()" required><option value="" disabled selected>-- เลือกหมวดหมู่ --</option><option>1. ภายนอก อุปกรณ์</option><option>2. ภายใน อุปกรณ์</option></select></div></div>
+                </div>
+
+                <div class="field">
+                    <label class="label is-small">อาการที่พบ (Sub-Case)</label>
+                    <div class="control"><div class="select is-fullwidth"><select id="subCase" required><option value="" disabled selected>-- เลือกหมวดหมู่ก่อน --</option></select></div></div>
+                </div>
+
+                <div class="field">
+                    <label class="label is-small">หมายเหตุ <span class="has-text-danger">*</span></label>
+                    <div class="control"><textarea id="remark" class="textarea" placeholder="บังคับระบุรายละเอียดเพิ่มเติม..." required></textarea></div>
+                </div>
+
+                <div class="mt-5">
+                    <button type="submit" id="btnSave" class="button is-link is-fullwidth mb-2 has-text-weight-bold">บันทึกข้อมูล</button>
+                    <button type="button" onclick="liff.closeWindow()" class="button is-light is-fullwidth">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลการเชื่อมต่อที่อัปเดตแล้ว
+        const API_URL = "https://line-webhook-receiver-1008123539373.asia-southeast1.run.app"; 
+        const MY_LIFF_ID = "2009632305"; 
+        
+        let sessionData = {}; 
+
+        const caseData = {
+            "1. ภายนอก อุปกรณ์": ["1.1 ไม่มีฝาปิด/ตัวล็อกชำรุด", "1.2 ไม่ได้ยึดเกาะตามมาตรฐาน (Bolt/สาย)", "1.3 ตำแหน่งไม่เหมาะสม (ต่ำ/หย่อน)", "1.4 สัตว์ทำรัง"],
+            "2. ภายใน อุปกรณ์": ["2.1 Port เสีย/ชำรุด (ระบุเบอร์ใน Remark)", "2.2 Pigtail / Connector เสื่อมสภาพ"]
+        };
+
+        function updateSubCase() {
+            const main = document.getElementById('mainCase').value;
+            const sub = document.getElementById('subCase');
+            sub.innerHTML = '<option value="" disabled selected>-- เลือกอาการที่พบ --</option>';
+            if(caseData[main]) {
+                caseData[main].forEach(item => { sub.innerHTML += `<option value="${item}">${item}</option>`; });
             }
         }
-    } catch (e) { document.getElementById('loader').innerHTML = "Error: " + e.message; }
-};
+
+        window.onload = async () => {
+            await liff.init({ liffId: MY_LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                const profile = await liff.getProfile();
+                try {
+                    const res = await fetch(`${API_URL}/api/checkUser?uid=${profile.userId}`);
+                    const data = await res.json();
+                    if (data.cache) {
+                        sessionData = data.cache;
+                        document.getElementById('locInfo').innerText = `📍 พิกัด: ${sessionData.latLong} | 🏢 จ.${sessionData.province}`;
+                        document.getElementById('mainForm').style.display = 'block';
+                    } else {
+                        alert("⚠️ ไม่พบข้อมูลพิกัด กรุณาส่งรูปภาพเข้ามาในแชทก่อนครับ");
+                        liff.closeWindow();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+                }
+            }
+        };
+
+        async function submitData(e) {
+            e.preventDefault(); 
+            const btn = document.getElementById('btnSave');
+            btn.classList.add('is-loading');
+            btn.disabled = true;
+
+            const profile = await liff.getProfile();
+            const payload = {
+                uid: profile.userId,
+                surveyName: profile.displayName,
+                splitterId: document.getElementById('spId').value,
+                type: document.getElementById('type').value,
+                mainCase: document.getElementById('mainCase').value,
+                subCase: document.getElementById('subCase').value,
+                remark: document.getElementById('remark').value,
+                latLong: sessionData.latLong,
+                province: sessionData.province,
+                tempFileName: sessionData.tempFileName
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/api/saveData`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert(`✅ บันทึกข้อมูลสำเร็จ!\nรหัสคิว: ${result.queueId}\n\n(หากต้องการลบ ให้พิมพ์ -Del,${result.queueId} ในช่องแชท)`);
+                    liff.closeWindow(); 
+                } else {
+                    alert("❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + (result.error || "Unknown Error"));
+                }
+            } catch (err) {
+                alert("❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+            } finally {
+                btn.classList.remove('is-loading');
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
