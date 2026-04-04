@@ -2,261 +2,389 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N2N Dashboard | Octopus Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>N2N Sentinel | GitHub Edition</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&display=swap');
-        :root { --primary: #0ea5e9; --bg-base: #0f172a; --bg-panel: #1e293b; --border-color: #334155; }
-        body { font-family: 'Chakra Petch', sans-serif; background: var(--bg-base); color: #f8fafc; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-        ::-webkit-scrollbar-track { background: var(--bg-base); }
-        .grid-container { max-height: calc(100vh - 160px); overflow-y: auto; overflow-x: auto; }
-        th { position: sticky; top: 0; background: var(--bg-panel); z-index: 10; border-bottom: 2px solid var(--border-color); }
-        tr { border-bottom: 1px solid #1e293b; transition: all 0.2s; }
-        tr:hover { background: rgba(14, 165, 233, 0.05); }
-        td { white-space: nowrap; }
-        .standard-input { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: #f8fafc; transition: all 0.2s; }
-        .standard-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+        :root { --primary: #0ea5e9; --bg-main: #020617; --bg-app: #0f172a; --glass: rgba(30, 41, 59, 0.7); }
+        
+        body { font-family: 'Chakra Petch', sans-serif; background: var(--bg-main); color: #f8fafc; overflow-x: hidden; user-select: none; -webkit-tap-highlight-color: transparent;}
+        
+        /* กรอบจำลองมือถือ (Mobile Wrapper) สำหรับเปิดบนจอ PC กว้างๆ */
+        .app-wrapper {
+            background: var(--bg-app);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 480px; 
+            margin: 0 auto;
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .app-wrapper {
+                min-height: 90vh;
+                margin-top: 5vh;
+                margin-bottom: 5vh;
+                border: 1px solid rgba(56, 189, 248, 0.2);
+                border-radius: 2rem;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(14, 165, 233, 0.1);
+                overflow: hidden;
+            }
+        }
+
+        .glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .step-active { border-bottom: 3px solid var(--primary); background: rgba(14, 165, 233, 0.1); color: var(--primary); }
     </style>
 </head>
-<body class="p-4 md:p-6 min-h-screen flex flex-col relative">
+<body>
 
-    <div id="debug" class="mb-4 h-16 overflow-y-auto bg-slate-900 p-2 rounded-lg border border-slate-700 text-[10px] font-mono text-emerald-400 opacity-80 flex flex-col-reverse">
-        <span>> DASHBOARD_OCTOPUS_BOOTSTRAP...</span>
+<div class="app-wrapper p-4 md:p-6">
+
+    <!-- 🧠 Monitor (มองเห็น Event) -->
+    <div id="debug" class="mb-3 h-14 overflow-y-auto bg-slate-900 p-2 rounded-lg border border-slate-700 text-[9px] font-mono text-emerald-400 opacity-80 flex flex-col-reverse">
+        <span>> BOOTSTRAP_GITHUB_ENGINE...</span>
     </div>
 
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
-        <div>
-            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center shadow-lg shadow-sky-500/20">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-white"></i>
-                </div>
-                N2N Intel Grid
-            </h1>
-            <p class="text-slate-400 text-sm mt-1">Octopus Architecture V55</p>
+    <!-- ============================================== -->
+    <!-- 🐙 UI VIEWS (ส่วนแสดงผลหน้าจอต่างๆ)             -->
+    <!-- ============================================== -->
+    
+    <!-- View 1: Sync / Loading -->
+    <div id="view-sync" class="flex-1 flex flex-col items-center justify-center space-y-6 animate-in fade-in">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 border-4 border-sky-500/20 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+            <i data-lucide="network" class="absolute inset-0 m-auto w-6 h-6 text-sky-400"></i>
         </div>
-        
-        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <div class="relative flex-1 md:w-64">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                <input type="text" id="searchInput" placeholder="ค้นหารหัสงาน, จังหวัด, ชื่อช่าง..." class="standard-input w-full text-sm rounded-lg pl-9 pr-4 py-2">
-            </div>
-            
-            <select id="statusFilter" class="standard-input text-sm rounded-lg px-4 py-2 cursor-pointer">
-                <option value="ALL">ดูทุกสถานะ</option>
-                <option value="Pending">รอตรวจสอบ</option>
-                <option value="Approved">อนุมัติแล้ว</option>
-            </select>
-            
-            <button id="btn-export" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                <i data-lucide="download" class="w-4 h-4"></i> โหลด CSV
-            </button>
-            <button id="btn-sync" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> รีเฟรชข้อมูล
-            </button>
+        <div class="text-center">
+            <h1 class="text-2xl font-black italic text-sky-400 tracking-tighter">N2N <span class="text-white">LINK</span></h1>
+            <p id="sync-text" class="text-[10px] text-slate-500 uppercase tracking-widest mt-2 animate-pulse">Establishing Connection...</p>
         </div>
-    </header>
+    </div>
 
-    <div class="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow-xl">
-        <div class="grid-container flex-1">
-            <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                    <tr class="text-slate-300">
-                        <th class="p-4 font-medium">วัน-เวลา</th>
-                        <th class="p-4 font-medium">รหัสงาน (QID)</th>
-                        <th class="p-4 font-medium">จังหวัด/พิกัด</th>
-                        <th class="p-4 font-medium">รหัสอุปกรณ์</th>
-                        <th class="p-4 font-medium">ประเภทงาน</th>
-                        <th class="p-4 font-medium">ชื่อผู้บันทึก</th>
-                        <th class="p-4 font-medium text-center">รูปหน้างาน</th>
-                        <th class="p-4 font-medium text-center">สถานะ</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="text-slate-300">
-                    </tbody>
-            </table>
+    <!-- View 2: Registration -->
+    <div id="view-reg" class="hidden flex-1 flex flex-col justify-center space-y-5 animate-in slide-in-from-bottom-6">
+        <div class="glass p-6 md:p-8 rounded-3xl space-y-5 shadow-xl">
+            <h2 class="text-xl font-bold text-sky-400 text-center uppercase tracking-widest">ลงทะเบียนเข้าสู่ระบบ</h2>
+            <div class="space-y-4">
+                <input type="text" id="reg-name" placeholder="ชื่อ-นามสกุลจริง" class="w-full bg-slate-800/80 p-4 rounded-xl text-white outline-none border border-slate-700 focus:border-sky-500 transition-all">
+                <input type="text" id="reg-empid" placeholder="รหัสพนักงาน (ถ้ามี)" class="w-full bg-slate-800/80 p-4 rounded-xl text-white outline-none border border-slate-700 focus:border-sky-500 transition-all">
+                <input type="tel" id="reg-phone" placeholder="เบอร์โทรศัพท์" class="w-full bg-slate-800/80 p-4 rounded-xl text-white outline-none border border-slate-700 focus:border-sky-500 transition-all">
+            </div>
+            <button id="btn-register" class="w-full bg-sky-600 hover:bg-sky-500 py-4 rounded-xl font-bold uppercase shadow-lg shadow-sky-900/50 transition-all active:scale-95">บันทึกข้อมูล</button>
         </div>
-        
-        <div class="p-3 bg-slate-900/80 border-t border-slate-700 flex justify-between items-center text-xs text-slate-400">
+    </div>
+
+    <!-- View 3: Main Operations Hub -->
+    <div id="view-main" class="hidden flex-1 flex flex-col space-y-5 animate-in fade-in duration-500">
+        <header class="flex justify-between items-center bg-slate-800/50 p-3 rounded-2xl border border-slate-700">
+            <div>
+                <h1 class="text-lg font-black italic text-sky-400 tracking-tighter">FIELD <span class="text-white">OPS</span></h1>
+                <p id="platform-badge" class="text-[8px] text-emerald-500 font-mono tracking-widest uppercase">Platform: GitHub</p>
+            </div>
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full" id="connDot"></span>
-                <span id="recordCount">ระบบพร้อมทำงาน</span>
+                <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                <span class="text-xs font-bold text-slate-300" id="display-name">--</span>
             </div>
-            <span>N2N System v55.0</span>
+        </header>
+
+        <!-- Stepper -->
+        <nav class="grid grid-cols-3 gap-2">
+            <div id="nav-1" class="glass p-2 rounded-xl text-center step-active transition-all"><div class="text-xs font-bold">1. อัปโหลดรูป</div></div>
+            <div id="nav-2" class="glass p-2 rounded-xl text-center opacity-40 transition-all"><div class="text-xs font-bold">2. สแกนพิกัด</div></div>
+            <div id="nav-3" class="glass p-2 rounded-xl text-center opacity-40 transition-all"><div class="text-xs font-bold">3. ส่งงาน</div></div>
+        </nav>
+
+        <!-- Deck 1: Capture / Upload -->
+        <div id="deck-capture" class="block animate-in zoom-in-95">
+            <div id="btn-capture" class="glass p-10 md:p-12 rounded-[2.5rem] border-dashed border-2 border-slate-600 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:bg-slate-800 hover:border-sky-500/50 transition-all active:scale-95">
+                <div class="p-4 bg-sky-500/10 rounded-full text-sky-400"><i data-lucide="image-plus" class="w-10 h-10"></i></div>
+                <div class="text-center">
+                    <p id="upload-txt-main" class="font-bold text-lg text-slate-200">อัปโหลดรูปภาพงาน</p>
+                    <p id="upload-txt-sub" class="text-[10px] text-slate-500 mt-1">เลือกไฟล์ภาพจากอุปกรณ์ของคุณ (ต้องมีลายน้ำ GPS)</p>
+                </div>
+                <input type="file" id="file-input" accept="image/*" class="hidden">
+            </div>
+        </div>
+
+        <!-- Deck 2: Scanning -->
+        <div id="deck-scanning" class="hidden relative glass rounded-3xl overflow-hidden aspect-[4/3] bg-black border border-sky-500/20 shadow-2xl">
+            <img id="preview-img" class="w-full h-full object-contain opacity-60">
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p class="text-sky-400 font-bold text-xs uppercase tracking-widest animate-pulse">Omni-AI Scanning...</p>
+                <p id="ai-retry-text" class="text-[10px] text-amber-400 mt-2 hidden animate-bounce">พิกัดไม่ชัดเจน กำลังขยายสเกลวิเคราะห์...</p>
+            </div>
+        </div>
+
+        <!-- Deck 3: Form -->
+        <div id="deck-form" class="hidden glass p-5 rounded-[2.5rem] space-y-4 shadow-xl animate-in slide-in-from-bottom-8">
+            <div class="flex justify-between items-center p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 bg-emerald-500/20 rounded-md"><i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i></div>
+                    <div>
+                        <p class="text-[8px] text-emerald-500 uppercase font-bold tracking-wider">พิกัด (GPS)</p>
+                        <p id="form-gps" class="text-xs font-mono font-bold text-emerald-400">--</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-[8px] text-emerald-500 uppercase font-bold tracking-wider">จังหวัด</p>
+                    <p id="form-prov" class="text-base font-black text-white uppercase tracking-widest">--</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <input type="text" id="f-eqid" placeholder="รหัสอุปกรณ์ (Equipment ID)" class="w-full bg-slate-900/80 p-4 rounded-xl text-white font-mono uppercase outline-none border border-slate-700 focus:border-sky-500 transition-all">
+                <select id="f-case" class="w-full bg-slate-900/80 p-4 rounded-xl text-white outline-none border border-slate-700 focus:border-sky-500 transition-all appearance-none cursor-pointer">
+                    <option value="ภายนอกอุปกรณ์">งานสำรวจภายนอกอุปกรณ์</option>
+                    <option value="ภายในอุปกรณ์">งานสำรวจภายในอุปกรณ์</option>
+                    <option value="ย้ายสาย/ร้องเรียน">งานย้ายสาย/ร้องเรียน</option>
+                </select>
+                <textarea id="f-remark" placeholder="หมายเหตุหน้างาน (บังคับกรอก)..." class="w-full bg-slate-900/80 p-4 rounded-xl h-20 text-white resize-none outline-none border border-slate-700 focus:border-sky-500 transition-all"></textarea>
+            </div>
+
+            <button id="btn-submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold uppercase shadow-lg shadow-emerald-900/50 transition-all active:scale-95 flex justify-center items-center gap-2 text-sm tracking-widest">
+                <i data-lucide="send" class="w-4 h-4"></i> บันทึกและส่งงาน
+            </button>
+            <button id="btn-cancel" class="w-full py-2 text-xs text-slate-500 hover:text-slate-300 font-bold uppercase mt-1 tracking-wider">ยกเลิก/เลือกรูปใหม่</button>
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
+    <!-- UI: Global Loader -->
+    <div id="global-loader" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p id="loader-text" class="mt-4 text-emerald-400 font-bold uppercase tracking-widest text-xs">Committing Data...</p>
+    </div>
 
-        // 🧠 1. สมองกลาง (Event Bus) เหมือน LIFF
+</div> <!-- End App Wrapper -->
+
+    <!-- ============================================== -->
+    <!-- 🧠 OCTOPUS BRAIN LOGIC (REST API Edition)      -->
+    <!-- ============================================== -->
+    <script>
+        // 🔴 1. ตั้งค่าระบบ (ต้องแก้ 2 บรรทัดนี้ให้เป็นของท่านเอง)
+        const LIFF_ID = "2009634741-xdYCjBwI"; 
+        
+        // ใส่ URL Web App V55 ของท่านลงไปในนี้ (ตัวอย่าง: https://script.google.com/macros/s/AKfyc.../exec)
+        const GAS_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE"; 
+        
+        // 🧠 2. Event Bus
         const Brain = new EventTarget();
         const emit = (event, data = {}) => { 
             const d = document.getElementById('debug');
             const time = new Date().toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
             d.innerHTML = `<div class="mb-0.5"><span class="text-slate-500">[${time}]</span> <span class="text-sky-300">${event}</span></div>` + d.innerHTML;
-            console.log(`[EVENT] ${event}`, data);
             Brain.dispatchEvent(new CustomEvent(event, { detail: data })); 
         };
         const listen = (event, callback) => { Brain.addEventListener(event, (e) => callback(e.detail)); };
 
-        // 💾 2. พื้นที่ความจำส่วนกลาง (Global State)
-        const State = { masterData: [], filteredData: [], searchTerm: '', statusFilter: 'ALL' };
+        // 💾 3. Global State
+        const State = { userId: "", name: "", empId: "", base64: "", gps: {}, platform: "web" };
 
         // ==============================================
-        // 🐙 หนวด 1: ทหารสื่อสาร (API Gateway & Retry Engine)
+        // 🐙 หนวด 1: ทหารสื่อสาร (REST API Fetch Engine)
         // ==============================================
-        listen('API:CALL', ({ action, payload, onSuccessEvent, attempt = 1 }) => {
-            const MAX_RETRIES = 3; // Dashboard ไม่ต้อง Retry เยอะเท่ามือถือ
+        listen('API:CALL', async ({ action, payload, onSuccessEvent, attempt = 1 }) => {
+            const MAX_RETRIES = 3;
+            emit('UI:DEBUG', `Fetch Req: ${action} (Try ${attempt}/${MAX_RETRIES})`);
             
-            const timer = setTimeout(() => {
-                if (attempt < MAX_RETRIES) emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 });
-                else emit('SYS:ERROR', `เซิร์ฟเวอร์ไม่ตอบสนอง (Timeout x${MAX_RETRIES})`);
-            }, 10000); // ให้เวลา 10 วิ เพราะดึงข้อมูลเยอะ
+            if (action === 'AI_ANALYZE' && attempt > 1) {
+                document.getElementById('ai-retry-text').classList.remove('hidden');
+            }
 
-            google.script.run
-                .withSuccessHandler(res => {
-                    clearTimeout(timer);
-                    if (res && res.success) emit(onSuccessEvent, res);
-                    else emit('SYS:ERROR', res ? res.error : "Unknown Response Error");
-                })
-                .withFailureHandler(err => {
-                    clearTimeout(timer);
-                    if (attempt < MAX_RETRIES) emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 });
-                    else emit('SYS:ERROR', `Network Error: ${err.message}`);
-                })
-                .apiGateway({ action: action, payload: payload });
-        });
+            try {
+                // ยิงข้อมูลไปหาเซิร์ฟเวอร์ Google Apps Script ข้ามโดเมน
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    redirect: 'follow', // สำคัญมากสำหรับ GAS ป้องกัน CORS
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // เลี่ยง Preflight
+                    },
+                    body: JSON.stringify({ action: action, payload: payload })
+                });
 
-        // ==============================================
-        // 🐙 หนวด 2: การแสดงผลหลัก (UI Controller)
-        // ==============================================
-        listen('UI:LOADING', (isLoading) => {
-            const tbody = document.getElementById('tableBody');
-            const icon = document.getElementById('refreshIcon');
-            const dot = document.getElementById('connDot');
-            
-            if(isLoading) {
-                icon.classList.add('animate-spin');
-                dot.classList.replace('bg-emerald-500', 'bg-amber-500');
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-20">
-                    <div class="flex flex-col items-center space-y-3">
-                        <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span class="text-sm text-slate-400">กำลังซิงค์ข้อมูลกับฐานทัพ...</span>
-                    </div></td></tr>`;
-            } else {
-                icon.classList.remove('animate-spin');
-                dot.classList.replace('bg-amber-500', 'bg-emerald-500');
+                const res = await response.json();
+
+                if (res && res.success) {
+                    emit(onSuccessEvent, res);
+                } else {
+                    // ถ้ายิงผ่าน แต่ Logic พัง (เช่น AI หาพิกัดไม่เจอ) ไม่ต้องยิงซ้ำ
+                    emit('SYS:ERROR', res ? res.error : "Unknown Response Error");
+                }
+                
+            } catch (err) {
+                // ถ้ายิงไม่ผ่าน (เช่น เน็ตหน้างานหลุด) ให้พยายามซ้ำ
+                if (attempt < MAX_RETRIES) {
+                    setTimeout(() => {
+                        emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 });
+                    }, 3000); // หน่วงเวลา 3 วิแล้วยิงใหม่
+                } else {
+                    emit('SYS:ERROR', `ไม่สามารถติดต่อเซิร์ฟเวอร์ฐานข้อมูลได้: ${err.message}`);
+                }
             }
         });
 
-        listen('SYS:ERROR', (err) => {
-            emit('UI:LOADING', false);
-            document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="text-center py-16 text-red-400">${err}</td></tr>`;
-            Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: err, background: '#1e293b', color: '#f8fafc' });
+        // ==============================================
+        // 🐙 หนวด 2: Chameleon UI
+        // ==============================================
+        listen('UI:SHOW_LOADER', (msg) => {
+            document.getElementById('loader-text').innerText = msg || "Processing...";
+            document.getElementById('global-loader').classList.remove('hidden');
         });
-
-        // ==============================================
-        // 🐙 หนวด 3: ผู้จัดการข้อมูล (Data & Filter Engine)
-        // ==============================================
-        window.onload = () => emit('ACTION:FETCH_DATA'); // เริ่มทำงานทันทีที่เปิดหน้า
-
-        document.getElementById('btn-sync').onclick = () => emit('ACTION:FETCH_DATA');
+        listen('UI:HIDE_LOADER', () => document.getElementById('global-loader').classList.add('hidden'));
         
-        listen('ACTION:FETCH_DATA', () => {
-            emit('UI:LOADING', true);
-            emit('API:CALL', { action: 'DB_FETCH_JOBS', payload: {}, onSuccessEvent: 'DATA:RECEIVED' });
-        });
-
-        listen('DATA:RECEIVED', (res) => {
-            State.masterData = res.data;
-            emit('ACTION:FILTER'); // โหลดเสร็จสั่งกรองข้อมูลต่อทันที
-        });
-
-        // ระบบจับ Event การพิมพ์ค้นหา และเปลี่ยน Dropdown
-        document.getElementById('searchInput').onkeyup = (e) => {
-            State.searchTerm = e.target.value.toLowerCase();
-            emit('ACTION:FILTER');
-        };
-        document.getElementById('statusFilter').onchange = (e) => {
-            State.statusFilter = e.target.value;
-            emit('ACTION:FILTER');
-        };
-
-        listen('ACTION:FILTER', () => {
-            State.filteredData = State.masterData.filter(row => {
-                const textMatch = (row.qid || '').toLowerCase().includes(State.searchTerm) ||
-                                  (row.equipment || '').toLowerCase().includes(State.searchTerm) ||
-                                  (row.province || '').toLowerCase().includes(State.searchTerm) ||
-                                  (row.user || '').toLowerCase().includes(State.searchTerm);
-                const statusMatch = State.statusFilter === 'ALL' || row.status === State.statusFilter;
-                return textMatch && statusMatch;
-            });
-            emit('UI:RENDER_TABLE');
-        });
-
-        // ==============================================
-        // 🐙 หนวด 4: ช่างทาสีตาราง (Table Renderer)
-        // ==============================================
-        listen('UI:RENDER_TABLE', () => {
-            emit('UI:LOADING', false);
-            const tbody = document.getElementById('tableBody');
-            document.getElementById('recordCount').innerText = `พบข้อมูล: ${State.filteredData.length} รายการ`;
-            
-            if (State.filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-16 text-slate-500">ไม่มีข้อมูลตามเงื่อนไขที่ค้นหา</td></tr>`;
-                return;
+        listen('SYS:ERROR', (err) => {
+            emit('UI:HIDE_LOADER');
+            Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: err, background: '#1e293b', color: '#f8fafc', confirmButtonColor: '#0ea5e9' });
+            if (!document.getElementById('deck-scanning').classList.contains('hidden')) {
+                emit('UI:SWITCH_DECK', 1);
+                document.getElementById('ai-retry-text').classList.add('hidden');
             }
+        });
 
-            tbody.innerHTML = State.filteredData.map(row => {
-                let badge = row.status === 'Pending' ? `<span class="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-xs">รอตรวจสอบ</span>` 
-                          : row.status === 'Approved' ? `<span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-xs">อนุมัติแล้ว</span>` 
-                          : `<span class="px-3 py-1 bg-slate-700 text-slate-300 rounded-full text-xs">${row.status}</span>`;
+        listen('UI:SWITCH_SCREEN', (screenId) => {
+            ['view-sync', 'view-reg', 'view-main'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        });
 
-                return `<tr>
-                    <td class="p-4 text-slate-400 text-xs">${row.date}</td>
-                    <td class="p-4 font-medium text-sky-400">${row.qid}</td>
-                    <td class="p-4"><div class="flex flex-col"><span class="font-bold text-slate-200">${row.province}</span><span class="text-xs text-slate-500">${row.gps}</span></div></td>
-                    <td class="p-4 font-medium">${row.equipment}</td>
-                    <td class="p-4"><div class="flex flex-col"><span class="text-sm">${row.caseType}</span><span class="text-xs text-slate-500 truncate max-w-[150px]" title="${row.remark}">${row.remark}</span></div></td>
-                    <td class="p-4">${row.user}</td>
-                    <td class="p-4 text-center">
-                        ${row.photoUrl !== 'No Drive Link' && row.photoUrl !== '' ? 
-                            `<button onclick="window.open('${row.photoUrl}', '_blank')" class="p-2 bg-slate-700 hover:bg-sky-600 rounded-lg text-white transition-colors"><i data-lucide="image" class="w-4 h-4"></i></button>` 
-                            : `<span class="text-xs text-slate-500">ไม่มีรูป</span>`
-                        }
-                    </td>
-                    <td class="p-4 text-center">${badge}</td>
-                </tr>`;
-            }).join('');
-            lucide.createIcons();
+        listen('UI:SWITCH_DECK', (deckNum) => {
+            ['deck-capture', 'deck-scanning', 'deck-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            const decks = ['deck-capture', 'deck-scanning', 'deck-form'];
+            document.getElementById(decks[deckNum-1]).classList.remove('hidden');
+            
+            for(let i=1; i<=3; i++) {
+                const nav = document.getElementById('nav-'+i);
+                if(i === deckNum) {
+                    nav.className = 'glass p-2 rounded-xl text-center step-active transition-all';
+                    nav.querySelector('div').className = 'text-xs font-bold text-sky-400';
+                } else if (i < deckNum) {
+                    nav.className = 'glass p-2 rounded-xl text-center border border-emerald-500/30 bg-emerald-500/5 transition-all';
+                    nav.querySelector('div').className = 'text-xs font-bold text-emerald-400';
+                } else {
+                    nav.className = 'glass p-2 rounded-xl text-center opacity-40 transition-all';
+                    nav.querySelector('div').className = 'text-xs font-bold text-slate-300';
+                }
+            }
         });
 
         // ==============================================
-        // 🐙 หนวด 5: เครื่องพิมพ์รายงาน (Exporter)
+        // 🐙 หนวด 3: Identity Sentinel
         // ==============================================
-        document.getElementById('btn-export').onclick = () => emit('ACTION:EXPORT_CSV');
+        window.onload = async () => {
+            lucide.createIcons();
+            try {
+                emit('UI:DEBUG', 'Init LIFF SDK (GitHub Edition)');
+                await liff.init({ liffId: LIFF_ID });
+                
+                State.platform = liff.getOS();
+                if(State.platform === 'web') document.getElementById('platform-badge').innerText = `Platform: PC/Web`;
+                
+                if (!liff.isLoggedIn()) { 
+                    emit('UI:DEBUG', 'Web Login Required...');
+                    liff.login({ redirectUri: window.location.href }); 
+                    return; 
+                }
+                
+                const profile = await liff.getProfile();
+                State.userId = profile.userId;
+                emit('API:CALL', { action: 'AUTH_CHECK', payload: { userId: State.userId }, onSuccessEvent: 'AUTH:CHECKED' });
+            } catch(e) { 
+                emit('SYS:ERROR', "LIFF Error: " + e.message); 
+            }
+        };
 
-        listen('ACTION:EXPORT_CSV', () => {
-            if(State.filteredData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลให้ส่งออก', 'info');
+        listen('AUTH:CHECKED', (res) => {
+            if (res.registered) {
+                State.name = res.name;
+                State.empId = res.empId;
+                document.getElementById('display-name').innerText = res.name;
+                emit('UI:SWITCH_SCREEN', 'view-main');
+            } else {
+                emit('UI:SWITCH_SCREEN', 'view-reg');
+            }
+        });
+
+        document.getElementById('btn-register').onclick = () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
             
-            let csv = "data:text/csv;charset=utf-8,\uFEFF";
-            csv += "วัน-เวลา,รหัสงาน(QID),จังหวัด,พิกัด(GPS),รหัสอุปกรณ์,ประเภทงาน,หมายเหตุ,ชื่อผู้บันทึก,สถานะ\n";
-            State.filteredData.forEach(row => {
-                const remark = `"${(row.remark || '').replace(/"/g, '""')}"`;
-                csv += `${row.date},${row.qid},${row.province},"${row.gps}",${row.equipment},${row.caseType},${remark},${row.user},${row.status}\n`;
+            if(!name || !phone) return Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่อและเบอร์โทรศัพท์', 'warning');
+            
+            emit('UI:SHOW_LOADER', "กำลังบันทึกข้อมูลส่วนตัว...");
+            emit('API:CALL', { action: 'AUTH_REGISTER', payload: { userId: State.userId, fullName: name, empId: document.getElementById('reg-empid').value.trim() || "-", phone: phone }, onSuccessEvent: 'AUTH:REGISTERED' });
+        };
+        
+        listen('AUTH:REGISTERED', () => { location.reload(); });
+
+        // ==============================================
+        // 🐙 หนวด 4: Omni-Vision Sensor
+        // ==============================================
+        document.getElementById('btn-capture').onclick = () => document.getElementById('file-input').click();
+        
+        document.getElementById('file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                State.base64 = ev.target.result.split(',')[1];
+                document.getElementById('preview-img').src = ev.target.result;
+                document.getElementById('ai-retry-text').classList.add('hidden');
+                
+                emit('UI:SWITCH_DECK', 2); 
+                emit('API:CALL', { action: 'AI_ANALYZE', payload: { userId: State.userId, base64: State.base64 }, onSuccessEvent: 'AI:SUCCESS' });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // ==============================================
+        // 🐙 หนวด 5: Mission Control
+        // ==============================================
+        listen('AI:SUCCESS', (res) => {
+            State.gps = res.data;
+            document.getElementById('form-gps').innerText = `${State.gps.lat}, ${State.gps.lng}`;
+            document.getElementById('form-prov').innerText = State.gps.province;
+            emit('UI:SWITCH_DECK', 3);
+        });
+
+        document.getElementById('btn-cancel').onclick = () => {
+            document.getElementById('file-input').value = "";
+            emit('UI:SWITCH_DECK', 1);
+        };
+
+        document.getElementById('btn-submit').onclick = () => {
+            const eqId = document.getElementById('f-eqid').value.trim();
+            const remark = document.getElementById('f-remark').value.trim();
+            
+            if(!eqId || !remark) return Swal.fire({icon: 'warning', text: 'โปรดกรอกรหัสอุปกรณ์และหมายเหตุ', background: '#1e293b', color: '#fff'});
+            
+            document.getElementById('btn-submit').disabled = true;
+            emit('UI:SHOW_LOADER', "กำลังอัปโหลดงานเข้าสู่ระบบฐานข้อมูลกลาง...");
+            
+            emit('API:CALL', { 
+                action: 'DB_SUBMIT_JOB', 
+                payload: { userId: State.userId, userName: State.name, lat: State.gps.lat, lng: State.gps.lng, province: State.gps.province, equipment: eqId, remark: remark, caseType: document.getElementById('f-case').value, base64: State.base64 }, 
+                onSuccessEvent: 'JOB:SUCCESS' 
             });
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csv));
-            link.setAttribute("download", `รายงาน_N2N_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            
-            emit('UI:DEBUG', 'CSV Exported Successfully');
+        };
+
+        listen('JOB:SUCCESS', (res) => {
+            emit('UI:HIDE_LOADER');
+            Swal.fire({ icon: 'success', title: 'ส่งงานสำเร็จ!', text: 'รหัสคิวงาน: ' + res.qid, background: '#1e293b', color: '#fff', confirmButtonColor: '#10b981' })
+            .then(() => {
+                if(State.platform === 'web') {
+                    Swal.fire({ title: 'เรียบร้อย', text: 'คุณสามารถปิดหน้าต่างนี้ หรือกด OK เพื่อส่งงานใบต่อไป', background: '#1e293b', color: '#fff', confirmButtonColor: '#0ea5e9'})
+                    .then(() => location.reload());
+                } else {
+                    liff.closeWindow(); 
+                }
+            });
         });
     </script>
 </body>
