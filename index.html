@@ -2,170 +2,262 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ระบบบันทึกข้อมูล Splitter (Cloud Run v2)</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N2N Dashboard | Octopus Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #f0f2f5; padding: 15px; font-family: 'Chakra Petch', sans-serif; }
-        .box { border-radius: 15px; border-top: 6px solid #485fc7; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .label { font-size: 0.9rem; color: #363636; }
-        .notification { border-radius: 10px; margin-bottom: 1.5rem; }
-        .button.is-link { font-weight: bold; height: 3.5rem; border-radius: 10px; }
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&display=swap');
+        :root { --primary: #0ea5e9; --bg-base: #0f172a; --bg-panel: #1e293b; --border-color: #334155; }
+        body { font-family: 'Chakra Petch', sans-serif; background: var(--bg-base); color: #f8fafc; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        .grid-container { max-height: calc(100vh - 160px); overflow-y: auto; overflow-x: auto; }
+        th { position: sticky; top: 0; background: var(--bg-panel); z-index: 10; border-bottom: 2px solid var(--border-color); }
+        tr { border-bottom: 1px solid #1e293b; transition: all 0.2s; }
+        tr:hover { background: rgba(14, 165, 233, 0.05); }
+        td { white-space: nowrap; }
+        .standard-input { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: #f8fafc; transition: all 0.2s; }
+        .standard-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
     </style>
 </head>
-<body>
-    <div class="container is-max-desktop">
-        <div class="box" id="mainForm" style="display: none;">
-            <h1 class="title is-4 has-text-centered mb-5">📝 บันทึกข้อมูลงาน Splitter</h1>
-            
-            <div id="statusBox" class="notification is-link is-light has-text-centered py-3">
-                <p id="locInfo" class="is-size-6">📡 กำลังดึงข้อมูลพิกัดจาก AI...</p>
+<body class="p-4 md:p-6 min-h-screen flex flex-col relative">
+
+    <div id="debug" class="mb-4 h-16 overflow-y-auto bg-slate-900 p-2 rounded-lg border border-slate-700 text-[10px] font-mono text-emerald-400 opacity-80 flex flex-col-reverse">
+        <span>> DASHBOARD_OCTOPUS_BOOTSTRAP...</span>
+    </div>
+
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center shadow-lg shadow-sky-500/20">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-white"></i>
+                </div>
+                N2N Intel Grid
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Octopus Architecture V55</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div class="relative flex-1 md:w-64">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="ค้นหารหัสงาน, จังหวัด, ชื่อช่าง..." class="standard-input w-full text-sm rounded-lg pl-9 pr-4 py-2">
             </div>
             
-            <form id="dataForm" onsubmit="submitData(event)">
-                <div class="field">
-                    <label class="label">รหัสอุปกรณ์ (Splitter ID)</label>
-                    <div class="control">
-                        <input id="spId" class="input is-medium" type="text" placeholder="ตัวอย่าง: NRT-101" style="text-transform: uppercase;" required>
-                    </div>
-                </div>
+            <select id="statusFilter" class="standard-input text-sm rounded-lg px-4 py-2 cursor-pointer">
+                <option value="ALL">ดูทุกสถานะ</option>
+                <option value="Pending">รอตรวจสอบ</option>
+                <option value="Approved">อนุมัติแล้ว</option>
+            </select>
+            
+            <button id="btn-export" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                <i data-lucide="download" class="w-4 h-4"></i> โหลด CSV
+            </button>
+            <button id="btn-sync" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> รีเฟรชข้อมูล
+            </button>
+        </div>
+    </header>
 
-                <div class="field">
-                    <label class="label">ประเภทอุปกรณ์</label>
-                    <div class="control">
-                        <div class="select is-fullwidth is-medium">
-                            <select id="type" required>
-                                <option>L2</option>
-                                <option>L1</option>
-                                <option>OLT</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label">หมวดหมู่ปัญหา</label>
-                    <div class="control">
-                        <div class="select is-fullwidth is-medium">
-                            <select id="mainCase" onchange="updateSubCase()" required>
-                                <option value="" disabled selected>-- เลือกหมวดหมู่ --</option>
-                                <option>1. ภายนอก อุปกรณ์</option>
-                                <option>2. ภายใน อุปกรณ์</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label">อาการที่พบ</label>
-                    <div class="control">
-                        <div class="select is-fullwidth is-medium">
-                            <select id="subCase" required>
-                                <option value="" disabled selected>-- เลือกหมวดหมู่ก่อน --</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label">หมายเหตุ / รายละเอียด</label>
-                    <div class="control">
-                        <textarea id="remark" class="textarea" placeholder="ระบุข้อมูลเพิ่มเติม..." rows="3" required></textarea>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <button type="submit" id="btnSave" class="button is-link is-fullwidth">💾 บันทึกข้อมูลลงตาราง</button>
-                    <button type="button" onclick="liff.closeWindow()" class="button is-ghost is-fullwidth mt-2">ยกเลิก</button>
-                </div>
-            </form>
+    <div class="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow-xl">
+        <div class="grid-container flex-1">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="text-slate-300">
+                        <th class="p-4 font-medium">วัน-เวลา</th>
+                        <th class="p-4 font-medium">รหัสงาน (QID)</th>
+                        <th class="p-4 font-medium">จังหวัด/พิกัด</th>
+                        <th class="p-4 font-medium">รหัสอุปกรณ์</th>
+                        <th class="p-4 font-medium">ประเภทงาน</th>
+                        <th class="p-4 font-medium">ชื่อผู้บันทึก</th>
+                        <th class="p-4 font-medium text-center">รูปหน้างาน</th>
+                        <th class="p-4 font-medium text-center">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-slate-300">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div class="p-3 bg-slate-900/80 border-t border-slate-700 flex justify-between items-center text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full" id="connDot"></span>
+                <span id="recordCount">ระบบพร้อมทำงาน</span>
+            </div>
+            <span>N2N System v55.0</span>
         </div>
     </div>
 
     <script>
-        // 🔗 URL ของ Cloud Run functions ที่ท่าน Deploy สำเร็จ
-        const API_URL = "https://asia-southeast1-my-project-translate-400506.cloudfunctions.net/lineWebhook"; 
-        const LIFF_ID = "2009632305"; 
+        lucide.createIcons();
 
-        let cacheData = {}; 
-        const subCases = {
-            "1. ภายนอก อุปกรณ์": ["1.1 ฝาปิดชำรุด", "1.2 ไม่ได้ยึดตามมาตรฐาน", "1.3 สายหย่อน/ต่ำ", "1.4 สัตว์ทำรัง"],
-            "2. ภายใน อุปกรณ์": ["2.1 Port เสีย", "2.2 Connector เสื่อมสภาพ", "2.3 สายพันกัน"]
+        // 🧠 1. สมองกลาง (Event Bus) เหมือน LIFF
+        const Brain = new EventTarget();
+        const emit = (event, data = {}) => { 
+            const d = document.getElementById('debug');
+            const time = new Date().toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            d.innerHTML = `<div class="mb-0.5"><span class="text-slate-500">[${time}]</span> <span class="text-sky-300">${event}</span></div>` + d.innerHTML;
+            console.log(`[EVENT] ${event}`, data);
+            Brain.dispatchEvent(new CustomEvent(event, { detail: data })); 
+        };
+        const listen = (event, callback) => { Brain.addEventListener(event, (e) => callback(e.detail)); };
+
+        // 💾 2. พื้นที่ความจำส่วนกลาง (Global State)
+        const State = { masterData: [], filteredData: [], searchTerm: '', statusFilter: 'ALL' };
+
+        // ==============================================
+        // 🐙 หนวด 1: ทหารสื่อสาร (API Gateway & Retry Engine)
+        // ==============================================
+        listen('API:CALL', ({ action, payload, onSuccessEvent, attempt = 1 }) => {
+            const MAX_RETRIES = 3; // Dashboard ไม่ต้อง Retry เยอะเท่ามือถือ
+            
+            const timer = setTimeout(() => {
+                if (attempt < MAX_RETRIES) emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 });
+                else emit('SYS:ERROR', `เซิร์ฟเวอร์ไม่ตอบสนอง (Timeout x${MAX_RETRIES})`);
+            }, 10000); // ให้เวลา 10 วิ เพราะดึงข้อมูลเยอะ
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    clearTimeout(timer);
+                    if (res && res.success) emit(onSuccessEvent, res);
+                    else emit('SYS:ERROR', res ? res.error : "Unknown Response Error");
+                })
+                .withFailureHandler(err => {
+                    clearTimeout(timer);
+                    if (attempt < MAX_RETRIES) emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 });
+                    else emit('SYS:ERROR', `Network Error: ${err.message}`);
+                })
+                .apiGateway({ action: action, payload: payload });
+        });
+
+        // ==============================================
+        // 🐙 หนวด 2: การแสดงผลหลัก (UI Controller)
+        // ==============================================
+        listen('UI:LOADING', (isLoading) => {
+            const tbody = document.getElementById('tableBody');
+            const icon = document.getElementById('refreshIcon');
+            const dot = document.getElementById('connDot');
+            
+            if(isLoading) {
+                icon.classList.add('animate-spin');
+                dot.classList.replace('bg-emerald-500', 'bg-amber-500');
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-20">
+                    <div class="flex flex-col items-center space-y-3">
+                        <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-sm text-slate-400">กำลังซิงค์ข้อมูลกับฐานทัพ...</span>
+                    </div></td></tr>`;
+            } else {
+                icon.classList.remove('animate-spin');
+                dot.classList.replace('bg-amber-500', 'bg-emerald-500');
+            }
+        });
+
+        listen('SYS:ERROR', (err) => {
+            emit('UI:LOADING', false);
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="text-center py-16 text-red-400">${err}</td></tr>`;
+            Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: err, background: '#1e293b', color: '#f8fafc' });
+        });
+
+        // ==============================================
+        // 🐙 หนวด 3: ผู้จัดการข้อมูล (Data & Filter Engine)
+        // ==============================================
+        window.onload = () => emit('ACTION:FETCH_DATA'); // เริ่มทำงานทันทีที่เปิดหน้า
+
+        document.getElementById('btn-sync').onclick = () => emit('ACTION:FETCH_DATA');
+        
+        listen('ACTION:FETCH_DATA', () => {
+            emit('UI:LOADING', true);
+            emit('API:CALL', { action: 'DB_FETCH_JOBS', payload: {}, onSuccessEvent: 'DATA:RECEIVED' });
+        });
+
+        listen('DATA:RECEIVED', (res) => {
+            State.masterData = res.data;
+            emit('ACTION:FILTER'); // โหลดเสร็จสั่งกรองข้อมูลต่อทันที
+        });
+
+        // ระบบจับ Event การพิมพ์ค้นหา และเปลี่ยน Dropdown
+        document.getElementById('searchInput').onkeyup = (e) => {
+            State.searchTerm = e.target.value.toLowerCase();
+            emit('ACTION:FILTER');
+        };
+        document.getElementById('statusFilter').onchange = (e) => {
+            State.statusFilter = e.target.value;
+            emit('ACTION:FILTER');
         };
 
-        function updateSubCase() {
-            const main = document.getElementById('mainCase').value;
-            const sub = document.getElementById('subCase');
-            sub.innerHTML = '<option value="" disabled selected>-- เลือกอาการ --</option>';
-            if(subCases[main]) subCases[main].forEach(i => sub.innerHTML += `<option value="${i}">${i}</option>`);
-        }
+        listen('ACTION:FILTER', () => {
+            State.filteredData = State.masterData.filter(row => {
+                const textMatch = (row.qid || '').toLowerCase().includes(State.searchTerm) ||
+                                  (row.equipment || '').toLowerCase().includes(State.searchTerm) ||
+                                  (row.province || '').toLowerCase().includes(State.searchTerm) ||
+                                  (row.user || '').toLowerCase().includes(State.searchTerm);
+                const statusMatch = State.statusFilter === 'ALL' || row.status === State.statusFilter;
+                return textMatch && statusMatch;
+            });
+            emit('UI:RENDER_TABLE');
+        });
 
-        window.onload = async () => {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    // ตรวจสอบพิกัดที่ AI บันทึกไว้ใน Firestore
-                    const res = await fetch(`${API_URL}/api/checkUser?uid=${profile.userId}`);
-                    const data = await res.json();
-                    
-                    if (data.cache) {
-                        cacheData = data.cache;
-                        document.getElementById('locInfo').innerText = `📍 พิกัดที่ตรวจพบ: ${cacheData.latLong}`;
-                        document.getElementById('mainForm').style.display = 'block';
-                    } else {
-                        alert("⚠️ ไม่พบข้อมูลพิกัด! กรุณาส่งรูปเข้า LINE Bot เพื่อให้ AI สแกนก่อนครับ");
-                        liff.closeWindow();
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                alert("❌ การเชื่อมต่อล้มเหลว");
+        // ==============================================
+        // 🐙 หนวด 4: ช่างทาสีตาราง (Table Renderer)
+        // ==============================================
+        listen('UI:RENDER_TABLE', () => {
+            emit('UI:LOADING', false);
+            const tbody = document.getElementById('tableBody');
+            document.getElementById('recordCount').innerText = `พบข้อมูล: ${State.filteredData.length} รายการ`;
+            
+            if (State.filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-16 text-slate-500">ไม่มีข้อมูลตามเงื่อนไขที่ค้นหา</td></tr>`;
+                return;
             }
-        };
 
-        async function submitData(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnSave');
-            btn.classList.add('is-loading');
+            tbody.innerHTML = State.filteredData.map(row => {
+                let badge = row.status === 'Pending' ? `<span class="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-xs">รอตรวจสอบ</span>` 
+                          : row.status === 'Approved' ? `<span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-xs">อนุมัติแล้ว</span>` 
+                          : `<span class="px-3 py-1 bg-slate-700 text-slate-300 rounded-full text-xs">${row.status}</span>`;
 
-            const profile = await liff.getProfile();
-            const payload = {
-                uid: profile.userId,
-                surveyName: profile.displayName,
-                splitterId: document.getElementById('spId').value,
-                type: document.getElementById('type').value,
-                mainCase: document.getElementById('mainCase').value,
-                subCase: document.getElementById('subCase').value,
-                remark: document.getElementById('remark').value,
-                latLong: cacheData.latLong,
-                province: cacheData.province,
-                tempFileName: cacheData.tempFileName
-            };
+                return `<tr>
+                    <td class="p-4 text-slate-400 text-xs">${row.date}</td>
+                    <td class="p-4 font-medium text-sky-400">${row.qid}</td>
+                    <td class="p-4"><div class="flex flex-col"><span class="font-bold text-slate-200">${row.province}</span><span class="text-xs text-slate-500">${row.gps}</span></div></td>
+                    <td class="p-4 font-medium">${row.equipment}</td>
+                    <td class="p-4"><div class="flex flex-col"><span class="text-sm">${row.caseType}</span><span class="text-xs text-slate-500 truncate max-w-[150px]" title="${row.remark}">${row.remark}</span></div></td>
+                    <td class="p-4">${row.user}</td>
+                    <td class="p-4 text-center">
+                        ${row.photoUrl !== 'No Drive Link' && row.photoUrl !== '' ? 
+                            `<button onclick="window.open('${row.photoUrl}', '_blank')" class="p-2 bg-slate-700 hover:bg-sky-600 rounded-lg text-white transition-colors"><i data-lucide="image" class="w-4 h-4"></i></button>` 
+                            : `<span class="text-xs text-slate-500">ไม่มีรูป</span>`
+                        }
+                    </td>
+                    <td class="p-4 text-center">${badge}</td>
+                </tr>`;
+            }).join('');
+            lucide.createIcons();
+        });
 
-            try {
-                const res = await fetch(`${API_URL}/api/saveData`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await res.json();
+        // ==============================================
+        // 🐙 หนวด 5: เครื่องพิมพ์รายงาน (Exporter)
+        // ==============================================
+        document.getElementById('btn-export').onclick = () => emit('ACTION:EXPORT_CSV');
 
-                if (result.success) {
-                    alert(`✅ บันทึกสำเร็จ!\nคิวงาน: ${result.queueId}`);
-                    liff.closeWindow();
-                } else {
-                    alert("❌ บันทึกไม่สำเร็จ: " + result.error);
-                }
-            } catch (err) {
-                alert("❌ ติดต่อเซิร์ฟเวอร์ไม่ได้");
-            } finally {
-                btn.classList.remove('is-loading');
-            }
-        }
+        listen('ACTION:EXPORT_CSV', () => {
+            if(State.filteredData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลให้ส่งออก', 'info');
+            
+            let csv = "data:text/csv;charset=utf-8,\uFEFF";
+            csv += "วัน-เวลา,รหัสงาน(QID),จังหวัด,พิกัด(GPS),รหัสอุปกรณ์,ประเภทงาน,หมายเหตุ,ชื่อผู้บันทึก,สถานะ\n";
+            State.filteredData.forEach(row => {
+                const remark = `"${(row.remark || '').replace(/"/g, '""')}"`;
+                csv += `${row.date},${row.qid},${row.province},"${row.gps}",${row.equipment},${row.caseType},${remark},${row.user},${row.status}\n`;
+            });
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", `รายงาน_N2N_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            
+            emit('UI:DEBUG', 'CSV Exported Successfully');
+        });
     </script>
 </body>
 </html>
