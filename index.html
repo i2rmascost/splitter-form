@@ -78,6 +78,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black text-gray-900 tracking-tight">OPS <span class="text-blue-700 italic">SURVEY</span></h1>
+                <!-- 🎯 ลูกเล่นแสดง OS กลับมาแล้วตามคำสั่ง -->
                 <p id="os-badge" class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Field Node V76.4</p>
             </div>
         </div>
@@ -112,7 +113,7 @@
                 </div>
                 <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">อีเมล</label>
-                    <input type="email" id="reg-email" class="form-input" placeholder="email@company.com">
+                    <input type="email" id="reg-email" class="form-input" placeholder="email@gmail.com">
                 </div>
                 <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">เบอร์โทรศัพท์ติดต่อ *</label>
@@ -147,7 +148,7 @@
                 </div>
             </div>
 
-            <!-- DECK 2: Verification Scanning -->
+            <!-- DECK 2: Verification Scanning (ลบคำว่า AI ออกแล้ว) -->
             <div id="deck-scanning" class="hidden relative rounded-3xl overflow-hidden aspect-[3/4] bg-slate-900 border-4 border-white shadow-xl">
                 <img id="preview-img" class="w-full h-full object-contain opacity-60">
                 <div class="scan-line"></div>
@@ -171,10 +172,9 @@
                     </div>
                 </div>
 
-                <!-- Input Fields -->
+                <!-- 🎯 Input Fields คืนชีพตามต้นฉบับ 100% -->
                 <div class="space-y-3">
                     <div>
-                        <!-- 🎯 อัปเดต Placeholder รหัสอุปกรณ์ตามสั่ง -->
                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Equipment ID (รหัสอุปกรณ์) *</label>
                         <input type="text" id="f-eqid" class="form-input font-mono uppercase font-bold text-blue-900" placeholder="เช่น NKS01X1234">
                         <p class="text-[8px] text-slate-400 font-bold mt-1 ml-1">รูปแบบ: [ตัวย่อจังหวัด3ตัว][Areacode]X[รหัสอุปกรณ์]</p>
@@ -199,12 +199,13 @@
                         </div>
                     </div>
 
+                    <!-- 🎯 Sub_Case คืนชีพเรียบร้อย -->
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">หมวดงาน</label>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">หมวดงาน *</label>
                         <select id="f-case" class="form-input font-bold"></select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">อาการ / สาเหตุ</label>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">อาการ / สาเหตุ *</label>
                         <select id="f-subcase" class="form-input font-bold"></select>
                     </div>
 
@@ -227,23 +228,19 @@
     <!-- 🔄 Global Loading Overlay -->
     <div id="global-loader" class="hidden fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
         <div class="w-16 h-16 border-[6px] border-blue-100 border-t-blue-800 rounded-full animate-spin"></div>
-        <p class="mt-4 text-blue-800 font-black text-[10px] uppercase tracking-[0.4em]">กำลังประมวลผล...</p>
+        <p id="loader-msg" class="mt-4 text-blue-800 font-black text-[10px] uppercase tracking-[0.4em]">กำลังประมวลผล...</p>
     </div>
 </div>
 
     <!-- 🧠 Event-Driven Engine (Octopus V76.4) -->
     <script>
-        // 🚨 โปรดใส่ LIFF ID ให้ถูกต้อง
+        // 🚨 โปรดใส่ LIFF ID และ ENDPOINT ของท่านให้ถูกต้อง
         const LIFF_ID = "2009634741-xdYCjBwI";
         const ENDPOINT = atob("aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6UDM3RlhGc3ZLWDJ2WUF0UDRHazRhVXhIX0lEUWt4YW5VeFVncWZCd0MwY2ZPYUdncWNrc1dJbXlCT0lseFF4ZWQvZXhlYw==");
         const API_SECRET = atob("TjJOX1NFQ1JFVF8yMDI2X1g5");
 
-        // ฐานข้อมูล Case & Sub Case
-        const CASE_DB = {
-            "งานสำรวจภายนอก": ["อุปกรณ์ไม่มีฝาปิด / ฝาชำรุด", "สายขาด / ชำรุด", "อื่นๆ"],
-            "งานสำรวจภายใน": ["Port เสีย", "อื่นๆ"],
-            "งานย้ายสาย/ร้องเรียน": ["ลูกค้าแจ้งย้ายสาย", "สายกีดขวางทาง", "อื่นๆ"]
-        };
+        // ตัวแปรเก็บฐานข้อมูล Case & Sub Case ที่จะโหลดจาก Sheet: Set
+        let CASE_DB = {};
 
         const Brain = new EventTarget();
         const emit = (event, data = {}) => Brain.dispatchEvent(new CustomEvent(event, { detail: data }));
@@ -252,7 +249,7 @@
         // 💾 State Manager (รวม imgHash สำหรับตรวจสอบภาพซ้ำ)
         const State = { userId: "", name: "", empId: "", base64: "", gps: {}, imgHash: "", platform: "web" };
 
-        // 🐙 1. API Gateway Communication (Using Fetch API)
+        // 🐙 1. API Gateway Communication
         listen('API:CALL', async ({ action, payload, onSuccessEvent, attempt = 1 }) => {
             try {
                 const body = { ...payload, __secret: API_SECRET };
@@ -288,8 +285,17 @@
             lucide.createIcons();
         });
 
-        listen('SYS:ERROR', (err) => {
+        listen('UI:SHOW_LOADER', (msg) => {
+            document.getElementById('loader-msg').innerText = msg || "กำลังประมวลผล...";
+            document.getElementById('global-loader').classList.remove('hidden');
+        });
+
+        listen('UI:HIDE_LOADER', () => {
             document.getElementById('global-loader').classList.add('hidden');
+        });
+
+        listen('SYS:ERROR', (err) => {
+            emit('UI:HIDE_LOADER');
             // แจ้งเตือน Error (เช่น รูปซ้ำ หรือ สแกนพิกัดไม่เจอ)
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err, confirmButtonColor: '#1e40af' });
             emit('UI:SWITCH_DECK', 1); // ตีกลับไปหน้าถ่ายรูปเสมอเมื่อพัง
@@ -302,6 +308,10 @@
             try {
                 await liff.init({ liffId: LIFF_ID });
                 State.platform = liff.getOS();
+                
+                // 💡 จุดแสดง OS ข้างชื่อเวอร์ชัน
+                document.getElementById('os-badge').innerHTML = `Field Node V76.4 <span class="text-blue-500 ml-1 pl-1 border-l border-gray-300">OS: ${State.platform.toUpperCase()}</span>`;
+                
                 if (!liff.isLoggedIn()) { liff.login({ redirectUri: window.location.href }); return; }
                 
                 const profile = await liff.getProfile();
@@ -319,16 +329,29 @@
                 State.empId = res.empId || "-";
                 document.getElementById('user-display').innerText = res.name;
                 
-                const caseSelect = document.getElementById('f-case');
-                const subSelect = document.getElementById('f-subcase');
-                caseSelect.innerHTML = Object.keys(CASE_DB).map(k => `<option value="${k}">${k}</option>`).join('');
-                caseSelect.onchange = () => { subSelect.innerHTML = CASE_DB[caseSelect.value].map(v => `<option value="${v}">${v}</option>`).join(''); };
-                caseSelect.onchange();
-                
-                emit('UI:SWITCH_VIEW', 'view-main');
+                // แจ้งให้ระบบโหลด Config (Case/SubCase) จากหลังบ้าน
+                emit('UI:SHOW_LOADER', "กำลังโหลดฐานข้อมูลหมวดงาน...");
+                emit('API:CALL', { action: "FETCH_CASES", payload: {}, onSuccessEvent: "CASES:LOADED" });
             } else {
                 emit('UI:SWITCH_VIEW', 'view-reg');
             }
+        });
+
+        // เมื่อโหลดฐานข้อมูล Case/Subcase เสร็จแล้ว
+        listen('CASES:LOADED', (res) => {
+            emit('UI:HIDE_LOADER');
+            CASE_DB = res.data; // เก็บลงตัวแปรที่ล้างฝังโค้ดออกไปแล้ว
+            
+            const caseSelect = document.getElementById('f-case');
+            const subSelect = document.getElementById('f-subcase');
+            
+            caseSelect.innerHTML = Object.keys(CASE_DB).map(k => `<option value="${k}">${k}</option>`).join('');
+            caseSelect.onchange = () => { 
+                subSelect.innerHTML = CASE_DB[caseSelect.value].map(v => `<option value="${v}">${v}</option>`).join(''); 
+            };
+            caseSelect.onchange(); // เรียกใช้ 1 ครั้งเพื่อโหลดค่าเริ่มต้น
+            
+            emit('UI:SWITCH_VIEW', 'view-main');
         });
 
         document.getElementById('btn-do-reg').onclick = () => {
@@ -339,6 +362,7 @@
 
             if(!name || !empid || !phone) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลที่มีดอกจัน (*) ให้ครบ', 'warning');
 
+            emit('UI:SHOW_LOADER', "กำลังลงทะเบียน...");
             emit('API:CALL', { 
                 action: "AUTH_REGISTER", 
                 payload: { userId: State.userId, fullName: name, empId: empid, email: email, phone: phone }, 
@@ -356,24 +380,25 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 State.base64 = ev.target.result.split(',')[1];
+                State.imgHash = SparkMD5.hash(State.base64); // 🔒 สร้าง Hash ลายพิมพ์นิ้วมือภาพ
                 document.getElementById('preview-img').src = ev.target.result;
+                
                 emit('UI:SWITCH_DECK', 2);
                 
                 // ส่งรูปไปสแกนพิกัด และเช็คภาพซ้ำในขั้นตอนเดียวกัน
-                // ใน payload ใช้ AI_ANALYZE ตามเดิมให้สอดคล้องกับหลังบ้าน V78.2
                 emit('API:CALL', { action: "AI_ANALYZE", payload: { base64: State.base64 }, onSuccessEvent: "AI:DONE" });
             };
             reader.readAsDataURL(file);
         };
 
         listen('AI:DONE', (res) => {
-            // ดักจับกรณี AI ตอบกลับมาแต่พิกัดพัง (Undefined) ป้องกันความผิดพลาดของข้อมูล
+            // ดักจับกรณีตอบกลับมาแต่พิกัดพัง (Undefined) ป้องกันความผิดพลาดของข้อมูล
             if(!res || !res.data || !res.data.lat) {
                 emit('SYS:ERROR', "ระบบไม่สามารถระบุพิกัดได้ กรุณาถ่ายภาพที่มีลายน้ำพิกัดชัดเจนใหม่");
                 return;
             }
             State.gps = res.data;
-            State.imgHash = res.data.imgHash; // 🔒 รับ Hash ลายพิมพ์นิ้วมือภาพกลับมาเก็บไว้
+            State.imgHash = res.data.imgHash; 
 
             document.getElementById('display-gps').innerText = `${State.gps.lat}, ${State.gps.lng}`;
             document.getElementById('display-prov').innerText = State.gps.province;
@@ -390,14 +415,10 @@
         document.getElementById('btn-submit').onclick = () => {
             const eq = document.getElementById('f-eqid').value.trim();
             const rm = document.getElementById('f-remark').value.trim();
-            const typeSelect = document.getElementById('f-type');
-            const priSelect = document.getElementById('f-pri');
-            const caseSelect = document.getElementById('f-case');
-            const subSelect = document.getElementById('f-subcase');
             
             if(!eq || !rm) return Swal.fire("แจ้งเตือน", "กรุณากรอกรหัสอุปกรณ์และหมายเหตุให้ครบถ้วน", "warning");
 
-            document.getElementById('global-loader').classList.remove('hidden');
+            emit('UI:SHOW_LOADER', "กำลังบันทึกและส่งข้อมูล...");
             
             // 🚀 ยิงข้อมูลพร้อม imgHash เพื่อยืนยันว่าภาพไม่ซ้ำแน่นอน
             emit('API:CALL', {
@@ -409,10 +430,10 @@
                     lng: State.gps.lng,
                     province: State.gps.province,
                     equipment: eq,
-                    type: typeSelect.value,
-                    priority: priSelect.value,
-                    caseType: caseSelect.value,
-                    subCase: subSelect.value,
+                    type: document.getElementById('f-type').value,
+                    priority: document.getElementById('f-pri').value,
+                    caseType: document.getElementById('f-case').value,
+                    subCase: document.getElementById('f-subcase').value,
                     remark: rm,
                     base64: State.base64,
                     imgHash: State.imgHash // 🔒 ส่ง Hash กลับไปยืนยันกับเซิร์ฟเวอร์
@@ -422,7 +443,7 @@
         };
 
         listen('SUBMIT:DONE', (res) => {
-            document.getElementById('global-loader').classList.add('hidden');
+            emit('UI:HIDE_LOADER');
             Swal.fire({ icon: 'success', title: 'บันทึกงานสำเร็จ', text: `รหัสคิว: ${res.qid}`, confirmButtonColor: '#1e40af' })
             .then(() => { if (State.platform === 'web') location.reload(); else liff.closeWindow(); });
         });
