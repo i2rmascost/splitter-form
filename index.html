@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OPS SURVEY | Field Operations</title>
+    <!-- SDK & Libraries -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,18 +13,38 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap');
         
         :root { --primary: #1e40af; --bg-app: #f1f5f9; }
-        body { font-family: 'Sarabun', sans-serif; background: #020617; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background: #020617; /* พื้นหลังภายนอกสีเข้มเพื่อความหรูหรา */
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
 
+        /* 📱 Mobile/Tablet Wrapper */
         .app-container {
-            background: #ffffff; min-height: 100vh; display: flex; flex-direction: column;
-            width: 100%; max-width: 500px; margin: 0 auto; position: relative;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 500px; /* ล็อกความกว้างแบบแอปมือถือ */
+            margin: 0 auto;
+            position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.3);
         }
 
         @media (min-width: 640px) {
-            .app-container { min-height: 90vh; margin-top: 5vh; margin-bottom: 5vh; border-radius: 1.5rem; overflow: hidden; }
+            .app-container {
+                min-height: 90vh;
+                margin-top: 5vh;
+                margin-bottom: 5vh;
+                border-radius: 1.5rem;
+                overflow: hidden;
+            }
         }
 
+        /* 🎨 Custom UI Elements */
         .form-input {
             width: 100%; background: #f8fafc; border: 1px solid #e2e8f0;
             padding: 0.875rem 1rem; border-radius: 0.75rem; font-size: 0.95rem;
@@ -33,21 +54,26 @@
 
         .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: 0.3s; }
         .step-active .step-dot { background: var(--primary); transform: scale(1.5); box-shadow: 0 0 10px rgba(30, 64, 175, 0.3); }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
 
-    <!-- 🏥 Header -->
-    <header class="p-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20">
+    <!-- 🏥 Header: Professional Identity -->
+    <header class="p-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-800 rounded-lg flex items-center justify-center shadow-lg">
                 <i data-lucide="workflow" class="w-6 h-6 text-white"></i>
             </div>
             <div>
                 <h1 class="text-lg font-black text-gray-900 tracking-tight">OPS <span class="text-blue-700 italic">SURVEY</span></h1>
-                <p id="os-badge" class="text-[8px] font-black text-gray-400 uppercase tracking-widest">System Node V76.0</p>
+                <p id="os-badge" class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Field Node V76.4</p>
             </div>
         </div>
         <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
@@ -72,19 +98,15 @@
                 <p class="text-sm text-slate-400 mt-1">บันทึกข้อมูลเพื่อเปิดใช้งานระบบ OPS SURVEY</p>
             </div>
             <div class="space-y-4">
-                <div>
+                <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">ชื่อ-นามสกุล (ภาษาไทย) *</label>
                     <input type="text" id="reg-name" class="form-input" placeholder="ระบุชื่อจริง">
                 </div>
-                <div>
+                <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">รหัสพนักงาน *</label>
                     <input type="text" id="reg-empid" class="form-input" placeholder="ระบุรหัส 8 หลัก">
                 </div>
-                <div>
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">อีเมล</label>
-                    <input type="email" id="reg-email" class="form-input" placeholder="email@company.com">
-                </div>
-                <div>
+                <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">เบอร์โทรศัพท์ติดต่อ *</label>
                     <input type="tel" id="reg-phone" class="form-input" placeholder="0XXXXXXXXX">
                 </div>
@@ -130,7 +152,7 @@
                 <div class="mt-8 p-5 bg-blue-50 rounded-2xl border border-blue-100 flex gap-4">
                     <i data-lucide="info" class="w-5 h-5 text-blue-700 shrink-0"></i>
                     <p class="text-[11px] text-blue-700 leading-relaxed font-medium">
-                        โปรดใช้รูปภาพที่มีลายน้ำพิกัด (Lat/Long) และชื่อจังหวัดที่ชัดเจน ระบบ AI จะทำการสกัดข้อมูลเพื่อใช้ระบุตำแหน่งโดยอัตโนมัติ
+                        โปรดใช้รูปภาพที่มีลายน้ำพิกัด (Lat/Long) และชื่อจังหวัดที่ชัดเจน ระบบ AI จะทำการสกัดข้อมูล และ <b>ตรวจสอบภาพซ้ำ</b> โดยอัตโนมัติ
                     </p>
                 </div>
             </div>
@@ -158,11 +180,13 @@
                     </div>
                 </div>
 
-                <!-- Input Fields (Full 20 Column Mapping) -->
+                <!-- Input Fields -->
                 <div class="space-y-3">
                     <div>
+                        <!-- 🎯 อัปเดต Placeholder รหัสอุปกรณ์ตามสั่ง -->
                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Equipment ID (รหัสอุปกรณ์) *</label>
-                        <input type="text" id="f-eqid" class="form-input font-mono uppercase font-bold text-blue-900" placeholder="ตัวอย่าง: SPL-01">
+                        <input type="text" id="f-eqid" class="form-input font-mono uppercase font-bold text-blue-900" placeholder="เช่น NKS01X1234">
+                        <p class="text-[8px] text-slate-400 font-bold mt-1 ml-1">รูปแบบ: [ตัวย่อจังหวัด3ตัว][Areacode]X[รหัสอุปกรณ์]</p>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-3">
@@ -215,12 +239,12 @@
 
 </div>
 
-    <!-- 🧠 Event-Driven Engine -->
+    <!-- 🧠 Event-Driven Engine (Octopus V76.4) -->
     <script>
         // 🚨 โปรดใส่ LIFF ID และ ENDPOINT ของท่านให้ถูกต้อง
         const LIFF_ID = "2009634741-xdYCjBwI";
-        const ENDPOINT = "https://script.google.com/macros/s/AKfycbzP37FXFsvKX2vYAtP4Gk4aUxH_IDQkxanUxUgqfBwC0cfOaGgqcksWImyBOIlxQxed/exec";
-        const API_SECRET = "N2N_SECRET_2026_X9";
+        const ENDPOINT = atob("aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6UDM3RlhGc3ZLWDJ2WUF0UDRHazRhVXhIX0lEUWt4YW5VeFVncWZCd0MwY2ZPYUdncWNrc1dJbXlCT0lseFF4ZWQvZXhlYw==");
+        const API_SECRET = atob("TjJOX1NFQ1JFVF8yMDI2X1g5");
 
         // ฐานข้อมูล Case & Sub Case
         const CASE_DB = {
@@ -233,7 +257,7 @@
         const emit = (event, data = {}) => Brain.dispatchEvent(new CustomEvent(event, { detail: data }));
         const listen = (event, callback) => Brain.addEventListener(event, (e) => callback(e.detail));
 
-        // 💾 State Manager (มี imgHash สำหรับเช็คภาพซ้ำ)
+        // 💾 State Manager (รวม imgHash สำหรับตรวจสอบภาพซ้ำ)
         const State = { userId: "", name: "", empId: "", base64: "", gps: {}, imgHash: "", platform: "web" };
 
         // 🐙 1. API Gateway Communication
@@ -243,8 +267,12 @@
                 const res = await fetch(ENDPOINT, { method: "POST", body: JSON.stringify({ action, payload: body }) });
                 const json = await res.json();
                 
-                if (json && json.success) emit(onSuccessEvent, json);
-                else emit('SYS:ERROR', json ? json.error : "Server Response Error");
+                // ตรวจสอบความสำเร็จ หรือจับ Error จากหลังบ้าน (รวมถึงรูปซ้ำ)
+                if (json && json.success) {
+                    emit(onSuccessEvent, json);
+                } else {
+                    emit('SYS:ERROR', json ? json.error : "Server Response Error");
+                }
             } catch (e) {
                 if (attempt < 3) setTimeout(() => emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 }), 3000);
                 else emit('SYS:ERROR', "การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต");
@@ -265,6 +293,7 @@
 
         listen('SYS:ERROR', (err) => {
             document.getElementById('global-loader').classList.add('hidden');
+            // แจ้งเตือน Error (เช่น รูปซ้ำ หรือ สแกนพิกัดไม่เจอ)
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err, confirmButtonColor: '#1e40af' });
             emit('UI:SWITCH_DECK', 1); // ตีกลับไปหน้าถ่ายรูปเสมอเมื่อพัง
             document.getElementById('file-input').value = "";
@@ -297,20 +326,19 @@
         document.getElementById('btn-do-reg').onclick = () => {
             const name = document.getElementById('reg-name').value.trim();
             const empid = document.getElementById('reg-empid').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
             const phone = document.getElementById('reg-phone').value.trim();
             
             if(!name || !empid || !phone) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลที่มีดอกจัน (*) ให้ครบ', 'warning');
             
             emit('API:CALL', { 
                 action: "AUTH_REGISTER", 
-                payload: { userId: State.userId, fullName: name, empId: empid, email: email, phone: phone }, 
+                payload: { userId: State.userId, fullName: name, empId: empid, phone: phone }, 
                 onSuccessEvent: "REG:DONE" 
             });
         };
         listen('REG:DONE', () => location.reload());
 
-        // 🐙 4. Camera & AI Processing
+        // 🐙 4. Camera & AI Processing (+ Duplicate Check)
         document.getElementById('btn-camera-trigger').onclick = () => document.getElementById('file-input').click();
         document.getElementById('file-input').onchange = (e) => {
             const file = e.target.files[0];
@@ -320,19 +348,21 @@
                 State.base64 = ev.target.result.split(',')[1];
                 document.getElementById('preview-img').src = ev.target.result;
                 emit('UI:SWITCH_DECK', 2);
+                
+                // ส่งรูปไปสแกนพิกัด และเช็คภาพซ้ำในขั้นตอนเดียวกัน
                 emit('API:CALL', { action: "AI_ANALYZE", payload: { base64: State.base64 }, onSuccessEvent: "AI:DONE" });
             };
             reader.readAsDataURL(file);
         };
 
         listen('AI:DONE', (res) => {
-            // ดักจับกรณี AI ตอบกลับมาแต่พิกัดพัง (Undefined)
+            // ดักจับกรณี AI ตอบกลับมาแต่พิกัดพัง (Undefined) ป้องกันความผิดพลาดของข้อมูล
             if(!res || !res.data || !res.data.lat) {
                 emit('SYS:ERROR', "AI ไม่สามารถระบุพิกัดได้ กรุณาถ่ายภาพที่มีลายน้ำพิกัดชัดเจนใหม่");
                 return;
             }
             State.gps = res.data;
-            State.imgHash = res.data.imgHash; // ✅ รับ Hash กลับมาเก็บไว้
+            State.imgHash = res.data.imgHash; // 🔒 รับ Hash ลายพิมพ์นิ้วมือภาพกลับมาเก็บไว้
 
             document.getElementById('display-gps').innerText = `${State.gps.lat}, ${State.gps.lng}`;
             document.getElementById('display-prov').innerText = State.gps.province;
@@ -365,6 +395,8 @@
             if(!eq || !rm) return Swal.fire("แจ้งเตือน", "กรุณากรอกรหัสอุปกรณ์และหมายเหตุให้ครบถ้วน", "warning");
 
             document.getElementById('global-loader').classList.remove('hidden');
+            
+            // 🚀 ยิงข้อมูลพร้อม imgHash เพื่อยืนยันว่าภาพไม่ซ้ำแน่นอน
             emit('API:CALL', {
                 action: "DB_SUBMIT_JOB",
                 payload: {
@@ -380,7 +412,7 @@
                     subCase: subSelect.value,
                     remark: rm,
                     base64: State.base64,
-                    imgHash: State.imgHash // ✅ ส่ง Hash กลับไปยืนยันกับเซิร์ฟเวอร์
+                    imgHash: State.imgHash // 🔒 ส่ง Hash กลับไปยืนยันกับเซิร์ฟเวอร์
                 },
                 onSuccessEvent: "SUBMIT:DONE"
             });
