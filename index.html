@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OPS SURVEY | Field Operations</title>
-    <!-- 🛡️ SDK & Libraries -->
+    <!-- SDK & Libraries -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -55,17 +55,14 @@
 
         .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: 0.3s; }
         .step-active .step-dot { background: var(--primary); transform: scale(1.5); box-shadow: 0 0 10px rgba(30, 64, 175, 0.3); }
-        .step-active span { color: var(--primary); font-weight: 800; }
 
-        /* 🤖 Scan-line Effect (Verification Interface) */
-        .scan-line { 
-            height: 2px; width: 100%; background: #3b82f6; 
-            position: absolute; top: 0; left: 0; 
-            box-shadow: 0 0 10px #3b82f6; 
-            animation: scan 3s linear infinite; 
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        .scan-line { height: 2px; width: 100%; background: #3b82f6; position: absolute; top: 0; left: 0; box-shadow: 0 0 10px #3b82f6; animation: scan 3s linear infinite; }
         @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -114,6 +111,10 @@
                     <input type="text" id="reg-empid" class="form-input" placeholder="ระบุรหัส 8 หลัก">
                 </div>
                 <div class="group">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">อีเมล</label>
+                    <input type="email" id="reg-email" class="form-input" placeholder="email@company.com">
+                </div>
+                <div class="group">
                     <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5 ml-1">เบอร์โทรศัพท์ติดต่อ *</label>
                     <input type="tel" id="reg-phone" class="form-input" placeholder="0XXXXXXXXX">
                 </div>
@@ -132,7 +133,7 @@
 
             <!-- DECK 1: Camera Trigger -->
             <div id="deck-capture" class="block">
-                <div id="btn-camera" class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-16 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:bg-blue-50 transition-colors">
+                <div id="btn-camera-trigger" class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-16 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:bg-blue-50 transition-colors">
                     <i data-lucide="camera" class="w-12 h-12 text-blue-800"></i>
                     <p class="font-bold text-slate-700">แตะเพื่อถ่ายภาพงาน</p>
                     <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest italic text-center">ต้องใช้รูปที่มีลายน้ำพิกัด GPS เท่านั้น</p>
@@ -158,35 +159,59 @@
 
             <!-- DECK 3: Reporting Form -->
             <div id="deck-form" class="hidden space-y-4 animate-in slide-in-from-bottom-8">
-                <!-- Verification Results Header -->
+                <!-- Results Header -->
                 <div class="bg-blue-800 p-5 rounded-2xl text-white flex justify-between items-center shadow-lg">
                     <div>
                         <p class="text-[8px] font-black uppercase opacity-60 tracking-widest">พิกัดที่พบ</p>
-                        <p id="res-gps" class="text-xs font-mono font-bold tracking-tighter">--</p>
+                        <p id="display-gps" class="text-xs font-mono font-bold tracking-tighter">--</p>
                     </div>
                     <div class="text-right">
                         <p class="text-[8px] font-black uppercase opacity-60 tracking-widest">จังหวัด</p>
-                        <p id="res-prov" class="text-2xl font-black italic tracking-tighter uppercase">--</p>
+                        <p id="display-prov" class="text-2xl font-black italic tracking-tighter uppercase">--</p>
                     </div>
                 </div>
 
-                <!-- Input Fields (Mapping V76.4) -->
+                <!-- Input Fields -->
                 <div class="space-y-3">
                     <div>
+                        <!-- 🎯 อัปเดต Placeholder รหัสอุปกรณ์ตามสั่ง -->
                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Equipment ID (รหัสอุปกรณ์) *</label>
                         <input type="text" id="f-eqid" class="form-input font-mono uppercase font-bold text-blue-900" placeholder="เช่น NKS01X1234">
                         <p class="text-[8px] text-slate-400 font-bold mt-1 ml-1">รูปแบบ: [ตัวย่อจังหวัด3ตัว][Areacode]X[รหัสอุปกรณ์]</p>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-3">
-                        <select id="f-type" class="form-input font-bold"><option value="L2">ชนิดอุปกรณ์: L2</option><option value="L1">ชนิดอุปกรณ์: L1</option></select>
-                        <select id="f-pri" class="form-input font-bold"><option value="Normal">ความเร่งด่วน: ปกติ</option><option value="High">ความเร่งด่วน: สูง</option><option value="Critical">วิกฤต</option></select>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">ชนิดอุปกรณ์</label>
+                            <select id="f-type" class="form-input font-bold">
+                                <option value="L2">L2</option>
+                                <option value="L1">L1</option>
+                                <option value="OLT">OLT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">ความเร่งด่วน</label>
+                            <select id="f-pri" class="form-input font-bold">
+                                <option value="Normal">ปกติ (Normal)</option>
+                                <option value="High">สูง (High)</option>
+                                <option value="Critical">วิกฤต (Critical)</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <select id="f-case" class="form-input font-bold"></select>
-                    <select id="f-subcase" class="form-input font-bold"></select>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">หมวดงาน</label>
+                        <select id="f-case" class="form-input font-bold"></select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">อาการ / สาเหตุ</label>
+                        <select id="f-subcase" class="form-input font-bold"></select>
+                    </div>
 
-                    <textarea id="f-remark" class="form-input h-24 resize-none" placeholder="หมายเหตุหน้างาน (บังคับกรอก)..."></textarea>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">หมายเหตุหน้างาน *</label>
+                        <textarea id="f-remark" class="form-input h-24 resize-none" placeholder="ระบุอาการเสีย หรือข้อมูลเพิ่มเติม (บังคับกรอก)..."></textarea>
+                    </div>
                 </div>
 
                 <div class="pt-2 space-y-3">
@@ -202,175 +227,206 @@
     <!-- 🔄 Global Loading Overlay -->
     <div id="global-loader" class="hidden fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
         <div class="w-16 h-16 border-[6px] border-blue-100 border-t-blue-800 rounded-full animate-spin"></div>
-        <p class="mt-4 text-blue-800 font-black text-[10px] uppercase tracking-[0.4em]">กำลังส่งข้อมูล...</p>
+        <p class="mt-4 text-blue-800 font-black text-[10px] uppercase tracking-[0.4em]">กำลังประมวลผล...</p>
     </div>
 </div>
 
-<script>
-    // 🧠 Event-Driven Engine (Octopus V76.4 Logic Re-mastered)
-    const Brain = new EventTarget();
-    const emit = (event, data = {}) => Brain.dispatchEvent(new CustomEvent(event, { detail: data }));
-    const listen = (event, callback) => Brain.addEventListener(event, (e) => callback(e.detail));
+    <!-- 🧠 Event-Driven Engine (Octopus V76.4) -->
+    <script>
+        // 🚨 โปรดใส่ LIFF ID ให้ถูกต้อง
+        const LIFF_ID = "2009634741-xdYCjBwI";
+        const ENDPOINT = atob("aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6UDM3RlhGc3ZLWDJ2WUF0UDRHazRhVXhIX0lEUWt4YW5VeFVncWZCd0MwY2ZPYUdncWNrc1dJbXlCT0lseFF4ZWQvZXhlYw==");
+        const API_SECRET = atob("TjJOX1NFQ1JFVF8yMDI2X1g5");
 
-    const ENDPOINT = atob("aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6UDM3RlhGc3ZLWDJ2WUF0UDRHazRhVXhIX0lEUWt4YW5VeFVncWZCd0MwY2ZPYUdncWNrc1dJbXlCT0lseFF4ZWQvZXhlYw==");
-    const LIFF_ID = "2009634741-xdYCjBwI";
-    
-    const CASE_DB = { 
-        "งานสำรวจภายนอก": ["อุปกรณ์ไม่มีฝาปิด / ฝาชำรุด", "สายขาด / ชำรุด", "อื่นๆ"], 
-        "งานสำรวจภายใน": ["Port เสีย", "อื่นๆ"] 
-    };
+        // ฐานข้อมูล Case & Sub Case
+        const CASE_DB = {
+            "งานสำรวจภายนอก": ["อุปกรณ์ไม่มีฝาปิด / ฝาชำรุด", "สายขาด / ชำรุด", "อื่นๆ"],
+            "งานสำรวจภายใน": ["Port เสีย", "อื่นๆ"],
+            "งานย้ายสาย/ร้องเรียน": ["ลูกค้าแจ้งย้ายสาย", "สายกีดขวางทาง", "อื่นๆ"]
+        };
 
-    const State = { userId: "", name: "", empId: "", base64: "", imgHash: "", gps: {}, platform: "web" };
+        const Brain = new EventTarget();
+        const emit = (event, data = {}) => Brain.dispatchEvent(new CustomEvent(event, { detail: data }));
+        const listen = (event, callback) => Brain.addEventListener(event, (e) => callback(e.detail));
 
-    // 🐙 1. Authentication & System Boot
-    window.onload = async () => {
-        lucide.createIcons();
-        try {
-            await liff.init({ liffId: LIFF_ID });
-            State.platform = liff.getOS();
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            const profile = await liff.getProfile();
-            State.userId = profile.userId;
-            emit('API:CALL', { action: "AUTH_CHECK", payload: { userId: State.userId }, onSuccess: 'AUTH:RESULT' });
-        } catch (e) { emit('SYS:ERROR', "การเชื่อมต่อ LIFF ขัดข้อง"); }
-    };
+        // 💾 State Manager (รวม imgHash สำหรับตรวจสอบภาพซ้ำ)
+        const State = { userId: "", name: "", empId: "", base64: "", gps: {}, imgHash: "", platform: "web" };
 
-    listen('AUTH:RESULT', (res) => {
-        if (res.registered) {
-            State.name = res.name;
-            document.getElementById('user-display').innerText = res.name;
-            emit('UI:SWITCH_VIEW', 'view-main');
-        } else {
-            emit('UI:SWITCH_VIEW', 'view-reg');
-        }
-    });
-
-    // 🐙 2. API Gateway
-    listen('API:CALL', async ({ action, payload, onSuccess, attempt = 1 }) => {
-        try {
-            if (typeof google !== 'undefined') {
-                google.script.run
-                    .withSuccessHandler(res => { if(res.success) emit(onSuccess, res); else emit('SYS:ERROR', res.error); })
-                    .withFailureHandler(err => emit('SYS:ERROR', err.message))
-                    .apiGateway({ action, payload });
-            } else {
-                const res = await fetch(ENDPOINT, { method: "POST", body: JSON.stringify({ action, payload }) });
+        // 🐙 1. API Gateway Communication (Using Fetch API)
+        listen('API:CALL', async ({ action, payload, onSuccessEvent, attempt = 1 }) => {
+            try {
+                const body = { ...payload, __secret: API_SECRET };
+                const res = await fetch(ENDPOINT, { method: "POST", body: JSON.stringify({ action, payload: body }) });
                 const json = await res.json();
-                if (json && json.success) emit(onSuccess, json); else emit('SYS:ERROR', json ? json.error : "Server Error");
+
+                // ตรวจสอบความสำเร็จ หรือจับ Error จากหลังบ้าน (รวมถึงรูปซ้ำ)
+                if (json && json.success) {
+                    emit(onSuccessEvent, json);
+                } else {
+                    emit('SYS:ERROR', json ? json.error : "Server Response Error");
+                }
+            } catch (e) {
+                if (attempt < 3) setTimeout(() => emit('API:CALL', { action, payload, onSuccessEvent, attempt: attempt + 1 }), 3000);
+                else emit('SYS:ERROR', "การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต");
             }
-        } catch (e) {
-            if (attempt < 3) setTimeout(() => emit('API:CALL', { action, payload, onSuccess, attempt: attempt + 1 }), 3000);
-            else emit('SYS:ERROR', "การเชื่อมต่อล้มเหลว กรุณาลองใหม่อีกครั้ง");
-        }
-    });
-
-    // 🐙 3. Image Verification Hub
-    document.getElementById('btn-camera').onclick = () => document.getElementById('file-input').click();
-    document.getElementById('file-input').onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        // ปรับปรุง: การสร้าง Image Hash จาก ArrayBuffer เพื่อความเสถียรสูงสุด
-        const hashReader = new FileReader();
-
-        reader.onload = (ev) => {
-            State.base64 = ev.target.result.split(',')[1];
-            document.getElementById('preview-img').src = ev.target.result;
-            emit('UI:SWITCH_DECK', 2);
-            
-            // อ่านไฟล์เป็น ArrayBuffer เพื่อทำ MD5 Fingerprint
-            hashReader.readAsArrayBuffer(file);
-        };
-
-        hashReader.onload = (ev) => {
-            State.imgHash = SparkMD5.ArrayBuffer.hash(ev.target.result);
-            emit('API:CALL', { action: "SCAN_IMAGE", payload: { base64: State.base64 }, onSuccess: 'SCAN:SUCCESS' });
-        };
-
-        reader.readAsDataURL(file);
-    };
-
-    listen('SCAN:SUCCESS', (res) => {
-        State.gps = res.data;
-        document.getElementById('res-gps').innerText = `${res.data.lat}, ${res.data.lng}`;
-        document.getElementById('res-prov').innerText = res.data.province;
-        setupCascadingSelects();
-        emit('UI:SWITCH_DECK', 3);
-    });
-
-    // 🐙 4. Form Logic & Submission
-    function setupCascadingSelects() {
-        const main = document.getElementById('f-case');
-        const sub = document.getElementById('f-subcase');
-        main.innerHTML = Object.keys(CASE_DB).map(k => `<option value="${k}">${k}</option>`).join('');
-        main.onchange = () => {
-            sub.innerHTML = CASE_DB[main.value].map(v => `<option value="${v}">${v}</option>`).join('');
-        };
-        main.onchange();
-    }
-
-    document.getElementById('btn-submit').onclick = () => {
-        const eq = document.getElementById('f-eqid').value.trim();
-        const rm = document.getElementById('f-remark').value.trim();
-        if(!eq || !rm) { Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning'); return; }
-
-        document.getElementById('global-loader').classList.remove('hidden');
-        emit('API:CALL', {
-            action: "DB_SUBMIT_JOB",
-            payload: {
-                userId: State.userId, userName: State.name,
-                lat: State.gps.lat, lng: State.gps.lng, province: State.gps.province,
-                equipment: eq, remark: rm, type: document.getElementById('f-type').value,
-                priority: document.getElementById('f-pri').value, 
-                caseType: document.getElementById('f-case').value,
-                subCase: document.getElementById('f-subcase').value,
-                base64: State.base64, imgHash: State.imgHash
-            },
-            onSuccess: 'SUBMIT:DONE'
         });
-    };
 
-    listen('SUBMIT:DONE', (res) => {
-        document.getElementById('global-loader').classList.add('hidden');
-        Swal.fire({ icon: 'success', title: 'บันทึกงานสำเร็จ', text: `รหัสคิว: ${res.qid}`, confirmButtonColor: '#1e40af' })
-        .then(() => { if (State.platform === 'web') location.reload(); else liff.closeWindow(); });
-    });
+        // 🐙 2. UI Controllers
+        listen('UI:SWITCH_VIEW', (viewId) => {
+            ['view-sync', 'view-reg', 'view-main'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+        });
 
-    // 🐙 5. UI Control System
-    listen('UI:SWITCH_VIEW', (v) => {
-        ['view-sync', 'view-reg', 'view-main'].forEach(id => document.getElementById(id).classList.add('hidden'));
-        document.getElementById(v).classList.remove('hidden');
-    });
+        listen('UI:SWITCH_DECK', (deckNum) => {
+            ['deck-capture', 'deck-scanning', 'deck-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(['deck-capture', 'deck-scanning', 'deck-form'][deckNum - 1]).classList.remove('hidden');
+            
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById('dot-' + i);
+                dot.className = (i === deckNum ? 'step-active' : '') + ' flex flex-col items-center gap-2';
+            }
+            lucide.createIcons();
+        });
 
-    listen('UI:SWITCH_DECK', (n) => {
-        ['deck-capture', 'deck-scanning', 'deck-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
-        document.getElementById(['deck-capture', 'deck-scanning', 'deck-form'][n-1]).classList.remove('hidden');
-        for(let i=1; i<=3; i++) document.getElementById('dot-'+i).className = (i===n ? 'step-active' : '') + ' flex flex-col items-center gap-2';
-        lucide.createIcons();
-    });
+        listen('SYS:ERROR', (err) => {
+            document.getElementById('global-loader').classList.add('hidden');
+            // แจ้งเตือน Error (เช่น รูปซ้ำ หรือ สแกนพิกัดไม่เจอ)
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err, confirmButtonColor: '#1e40af' });
+            emit('UI:SWITCH_DECK', 1); // ตีกลับไปหน้าถ่ายรูปเสมอเมื่อพัง
+            document.getElementById('file-input').value = "";
+        });
 
-    listen('SYS:ERROR', (msg) => {
-        document.getElementById('global-loader').classList.add('hidden');
-        Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: msg, confirmButtonColor: '#1e40af' });
-        emit('UI:SWITCH_DECK', 1);
-    });
+        // 🐙 3. App Initialization
+        window.onload = async () => {
+            lucide.createIcons();
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                State.platform = liff.getOS();
+                if (!liff.isLoggedIn()) { liff.login({ redirectUri: window.location.href }); return; }
+                
+                const profile = await liff.getProfile();
+                State.userId = profile.userId;
+                
+                emit('API:CALL', { action: "AUTH_CHECK", payload: { userId: State.userId }, onSuccessEvent: "AUTH:RESULT" });
+            } catch (e) {
+                emit('SYS:ERROR', "การเชื่อมต่อ LIFF ขัดข้อง กรุณาเปิดผ่านแอป LINE");
+            }
+        };
 
-    document.getElementById('btn-cancel').onclick = () => {
-        document.getElementById('file-input').value = "";
-        emit('UI:SWITCH_DECK', 1);
-    };
+        listen('AUTH:RESULT', (res) => {
+            if (res.registered) {
+                State.name = res.name;
+                State.empId = res.empId || "-";
+                document.getElementById('user-display').innerText = res.name;
+                
+                const caseSelect = document.getElementById('f-case');
+                const subSelect = document.getElementById('f-subcase');
+                caseSelect.innerHTML = Object.keys(CASE_DB).map(k => `<option value="${k}">${k}</option>`).join('');
+                caseSelect.onchange = () => { subSelect.innerHTML = CASE_DB[caseSelect.value].map(v => `<option value="${v}">${v}</option>`).join(''); };
+                caseSelect.onchange();
+                
+                emit('UI:SWITCH_VIEW', 'view-main');
+            } else {
+                emit('UI:SWITCH_VIEW', 'view-reg');
+            }
+        });
 
-    document.getElementById('btn-do-reg').onclick = () => {
-        const name = document.getElementById('reg-name').value.trim();
-        const emp = document.getElementById('reg-empid').value.trim();
-        const phone = document.getElementById('reg-phone').value.trim();
-        if(!name || !emp || !phone) return;
-        document.getElementById('global-loader').classList.remove('hidden');
-        emit('API:CALL', { action: 'AUTH_REGISTER', payload: { userId: State.userId, fullName: name, empId: emp, phone: phone }, onSuccess: 'REG:DONE' });
-    };
-    listen('REG:DONE', () => location.reload());
+        document.getElementById('btn-do-reg').onclick = () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const empid = document.getElementById('reg-empid').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
 
-</script>
+            if(!name || !empid || !phone) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลที่มีดอกจัน (*) ให้ครบ', 'warning');
+
+            emit('API:CALL', { 
+                action: "AUTH_REGISTER", 
+                payload: { userId: State.userId, fullName: name, empId: empid, email: email, phone: phone }, 
+                onSuccessEvent: "REG:DONE" 
+            });
+        };
+        listen('REG:DONE', () => location.reload());
+
+        // 🐙 4. Camera & Processing (+ Duplicate Check)
+        document.getElementById('btn-camera-trigger').onclick = () => document.getElementById('file-input').click();
+        document.getElementById('file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                State.base64 = ev.target.result.split(',')[1];
+                document.getElementById('preview-img').src = ev.target.result;
+                emit('UI:SWITCH_DECK', 2);
+                
+                // ส่งรูปไปสแกนพิกัด และเช็คภาพซ้ำในขั้นตอนเดียวกัน
+                // ใน payload ใช้ AI_ANALYZE ตามเดิมให้สอดคล้องกับหลังบ้าน V78.2
+                emit('API:CALL', { action: "AI_ANALYZE", payload: { base64: State.base64 }, onSuccessEvent: "AI:DONE" });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        listen('AI:DONE', (res) => {
+            // ดักจับกรณี AI ตอบกลับมาแต่พิกัดพัง (Undefined) ป้องกันความผิดพลาดของข้อมูล
+            if(!res || !res.data || !res.data.lat) {
+                emit('SYS:ERROR', "ระบบไม่สามารถระบุพิกัดได้ กรุณาถ่ายภาพที่มีลายน้ำพิกัดชัดเจนใหม่");
+                return;
+            }
+            State.gps = res.data;
+            State.imgHash = res.data.imgHash; // 🔒 รับ Hash ลายพิมพ์นิ้วมือภาพกลับมาเก็บไว้
+
+            document.getElementById('display-gps').innerText = `${State.gps.lat}, ${State.gps.lng}`;
+            document.getElementById('display-prov').innerText = State.gps.province;
+            
+            emit('UI:SWITCH_DECK', 3);
+        });
+
+        document.getElementById('btn-cancel').onclick = () => {
+            document.getElementById('file-input').value = "";
+            emit('UI:SWITCH_DECK', 1);
+        };
+
+        // 🐙 5. Submission
+        document.getElementById('btn-submit').onclick = () => {
+            const eq = document.getElementById('f-eqid').value.trim();
+            const rm = document.getElementById('f-remark').value.trim();
+            const typeSelect = document.getElementById('f-type');
+            const priSelect = document.getElementById('f-pri');
+            const caseSelect = document.getElementById('f-case');
+            const subSelect = document.getElementById('f-subcase');
+            
+            if(!eq || !rm) return Swal.fire("แจ้งเตือน", "กรุณากรอกรหัสอุปกรณ์และหมายเหตุให้ครบถ้วน", "warning");
+
+            document.getElementById('global-loader').classList.remove('hidden');
+            
+            // 🚀 ยิงข้อมูลพร้อม imgHash เพื่อยืนยันว่าภาพไม่ซ้ำแน่นอน
+            emit('API:CALL', {
+                action: "DB_SUBMIT_JOB",
+                payload: {
+                    userId: State.userId,
+                    userName: State.name,
+                    lat: State.gps.lat,
+                    lng: State.gps.lng,
+                    province: State.gps.province,
+                    equipment: eq,
+                    type: typeSelect.value,
+                    priority: priSelect.value,
+                    caseType: caseSelect.value,
+                    subCase: subSelect.value,
+                    remark: rm,
+                    base64: State.base64,
+                    imgHash: State.imgHash // 🔒 ส่ง Hash กลับไปยืนยันกับเซิร์ฟเวอร์
+                },
+                onSuccessEvent: "SUBMIT:DONE"
+            });
+        };
+
+        listen('SUBMIT:DONE', (res) => {
+            document.getElementById('global-loader').classList.add('hidden');
+            Swal.fire({ icon: 'success', title: 'บันทึกงานสำเร็จ', text: `รหัสคิว: ${res.qid}`, confirmButtonColor: '#1e40af' })
+            .then(() => { if (State.platform === 'web') location.reload(); else liff.closeWindow(); });
+        });
+
+    </script>
 </body>
 </html>
